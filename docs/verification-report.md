@@ -22,10 +22,12 @@
 - Cached controller selection surfaces the backup-power accessory requirement.
 - High-line PSU options disappear when input voltage is changed to 110 V.
 - Engine regression coverage also still checks riser, storage protocol/form-factor, RAID, evidence, and import validation paths.
+- No-memory builds do not emit DIMM slot/population findings; those rules activate after a DIMM choice.
+- Headless Edge covered Persian layouts at 390 px, 768 px, and 1440 px; English switching; keyboard focus retention; modal focus return; empty search; mobile summary; known conflicts; increased text; CSV/JSON downloads; and print-to-PDF.
 
 ## Not fully tested
 - Real-device touch behavior outside headless Chromium.
 - Screen-reader specific behavior across NVDA, JAWS, VoiceOver, or TalkBack.
-- Full keyboard-only audit of every control combination beyond the semantic browser checks used here.
-- Production or staging deployment, because no destination or credentials were provided.
+- Full keyboard-only audit of every control combination beyond the focused browser checks listed above.
+- Production deployment; the authorized staging target is operationally verified separately.
 - Independent HPE qualification review beyond the encoded rules and source evidence.

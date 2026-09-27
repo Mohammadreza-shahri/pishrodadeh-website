@@ -160,6 +160,7 @@ function tag(text, kind = '') {
 function bidi(text, cls = '') {
   const node = el('span', text, cls);
   node.dir = 'ltr';
+  node.translate = false;
   return node;
 }
 
@@ -198,6 +199,8 @@ function field(label, value, onChange, {type = 'number', min = 1, max = 100000, 
     }
   }
   if (id) input.id = id;
+  input.name = id || label.toLowerCase().replace(/\s+/g, '-');
+  input.autocomplete = 'off';
   input.onchange = () => {
     if (!options && type === 'number') {
       const next = Number(input.value);
@@ -215,6 +218,7 @@ function field(label, value, onChange, {type = 'number', min = 1, max = 100000, 
 }
 
 function withRender(mutator, {resetList = true, announce = ''} = {}) {
+  const focus = focusSnapshot();
   mutator();
   if (resetList) {
     query = '';
@@ -222,15 +226,64 @@ function withRender(mutator, {resetList = true, announce = ''} = {}) {
   }
   persistState();
   render();
+  restoreFocus(focus);
   if (announce) toast(announce);
+}
+
+function focusSnapshot() {
+  const active = document.activeElement;
+  if (!active || !app.contains(active)) return null;
+  const tagName = active.tagName.toLowerCase();
+  const peers = [...app.querySelectorAll(tagName)];
+  return {
+    tagName,
+    id: active.id,
+    name: active.getAttribute('name'),
+    ariaLabel: active.getAttribute('aria-label'),
+    text: active.textContent.trim(),
+    index: peers.indexOf(active),
+  };
+}
+
+function restoreFocus(snapshot) {
+  if (!snapshot) return;
+  let target = snapshot.id ? document.getElementById(snapshot.id) : null;
+  if (!target && snapshot.name) target = app.querySelector(`${snapshot.tagName}[name="${CSS.escape(snapshot.name)}"]`);
+  if (!target && snapshot.ariaLabel) target = [...app.querySelectorAll(snapshot.tagName)].find(node => node.getAttribute('aria-label') === snapshot.ariaLabel);
+  if (!target && snapshot.text) target = [...app.querySelectorAll(snapshot.tagName)].find(node => node.textContent.trim() === snapshot.text);
+  if (!target) target = app.querySelectorAll(snapshot.tagName)[snapshot.index];
+  target?.focus();
+}
+
+function refreshParts(root, issues, selection = null) {
+  const focus = focusSnapshot();
+  renderParts(root, issues);
+  restoreFocus(focus);
+  if (selection && document.activeElement?.classList.contains('search')) {
+    document.activeElement.setSelectionRange(selection.start, selection.end);
+  }
 }
 
 function go(step) {
   if (step > 2 && !state.model_id) return;
+  if (step === 2 && state.step === 1) state.workloadConfirmed = true;
   state.step = step;
+  state.visitedSteps = [...new Set([...(state.visitedSteps || [1]), step])];
   persistState();
   render();
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  document.getElementById('main-content')?.focus();
+  window.scrollTo({top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
+}
+
+function stepComplete(step) {
+  if (step === 1) return Boolean((state.workloadConfirmed || state.model_id) && state.workload && state.requirements.ramGB && state.requirements.cores);
+  if (step === 2) return Boolean(state.model_id);
+  if (step === 3) {
+    if (!state.model_id) return false;
+    const issues = issueState();
+    return !issues.missing.length && !issues.direct.length && !issues.conflicts.length && !issues.unknown.length;
+  }
+  return false;
 }
 
 function model() {
@@ -248,12 +301,14 @@ function ruleText(rule) {
 
 function evidence(items) {
   const details = el('details', null, 'evidence-details');
-  details.append(el('summary', t('source')));
+  details.append(el('summary', `${t('source')} (${number((items || []).length)})`));
+  if (!items?.length) details.append(el('p', t('noEvidence'), 'small muted'));
   for (const item of items || []) {
     details.append(
       el('p', `QuickSpecs ${item.qs_id} · ${t('sourceDate')} ${item.version}`, 'small muted'),
       el('div', item.quote, 'evidence'),
     );
+    details.lastElementChild.translate = false;
   }
   return details;
 }
@@ -273,6 +328,7 @@ function renderModal(title) {
   dialog.append(header, modalFactory());
   overlay.append(dialog);
   document.body.append(overlay);
+  document.body.classList.add('modal-open');
   lastFocused = document.activeElement;
   close.focus();
   overlay.addEventListener('click', event => {
@@ -297,6 +353,7 @@ function renderModal(title) {
 
 function closeModal(overlay) {
   overlay.remove();
+  document.body.classList.remove('modal-open');
   lastFocused?.focus?.();
 }
 
@@ -322,10 +379,22 @@ function showDetails(option) {
 function coverageModal() {
   modalFactory = () => {
     const box = el('div');
+    const coverage = model()?.coverage;
     box.append(
       el('p', t('coverageBody')),
       el('p', `${data.models.length} ${lang === 'fa' ? 'پلتفرم' : 'platforms'} · ${data.rules.length} ${lang === 'fa' ? 'قاعده اجرایی' : 'executable rules'} · ${data.options.length} ${lang === 'fa' ? 'گزینه منبع‌دار' : 'source-linked entries'}`, 'small muted'),
     );
+    if (coverage) {
+      const groups = el('div', null, 'coverage-groups');
+      for (const status of ['partial', 'missing']) {
+        const group = el('section');
+        group.append(el('strong', t(status === 'partial' ? 'coveragePartial' : 'coverageMissing')));
+        const values = Object.entries(coverage).filter(([, value]) => value === status).map(([key]) => key);
+        group.append(el('p', values.join(' · '), 'code small'));
+        groups.append(group);
+      }
+      box.append(groups);
+    }
     return box;
   };
   renderModal(t('coverageTitle'));
@@ -350,9 +419,11 @@ function layout() {
   actions.append(tag(t('private'), 'dark'));
   if (state.model_id) actions.append(tag(model().short, 'outline'));
   const language = btn(lang === 'fa' ? 'English' : 'فارسی', () => {
+    const focus = focusSnapshot();
     lang = lang === 'fa' ? 'en' : 'fa';
     persistState();
     render();
+    restoreFocus(focus);
   }, 'ghost language');
   actions.append(language);
   header.append(brand, actions);
@@ -369,18 +440,26 @@ function layout() {
   intro.append(introCopy, introStatus);
 
   const main = el('main');
+  main.id = 'main-content';
+  main.tabIndex = -1;
   const stepper = el('nav', null, 'stepper');
   stepper.setAttribute('aria-label', lang === 'fa' ? 'مراحل پیکربندی' : 'Configuration steps');
   for (let index = 1; index <= 4; index += 1) {
-    const button = el('button', null, `step ${state.step === index ? 'current' : state.step > index ? 'done' : ''}`.trim());
+    const complete = stepComplete(index);
+    const visited = state.visitedSteps?.includes(index);
+    const stepState = state.step === index ? 'current' : complete ? 'done' : visited ? 'incomplete' : '';
+    const button = el('button', null, `step ${stepState}`.trim());
     button.type = 'button';
     button.disabled = index > 2 && !state.model_id;
     if (state.step === index) button.setAttribute('aria-current', 'step');
-    button.append(el('span', state.step > index ? '✓' : number(index)), document.createTextNode(t(`step${index}`)));
+    button.append(el('span', complete ? '✓' : number(index)), document.createTextNode(t(`step${index}`)));
     button.onclick = () => go(index);
     stepper.append(button);
   }
 
+  const coverageBand = el('section', null, 'coverage-band');
+  coverageBand.setAttribute('aria-label', t('coverageTitle'));
+  coverageBand.append(el('strong', t('coverageTitle')), el('span', t('coverageShort')), btn(t('coverageDetails'), coverageModal, 'linklike'));
   const content = el('section', null, 'page');
   const footer = el('footer', null, 'site-footer');
   footer.append(el('span', t('footer')), el('span', t('independent')));
@@ -399,7 +478,8 @@ function layout() {
   footerLinks.append(coverage, reset);
   footer.append(footerLinks);
 
-  shell.append(header, intro, stepper, content, footer);
+  shell.append(header, intro, stepper, coverageBand, main, footer);
+  main.append(content);
   app.append(shell);
   renderToastNotice();
   return content;
@@ -483,6 +563,7 @@ function workPage(root) {
     card.append(icon(key), copy, foot);
     card.onclick = () => withRender(() => {
       state.workload = key;
+      state.workloadConfirmed = true;
       state.advisorMode ??= 'guided';
       const firstProfile = guidedProfiles[key][0];
       state.requirements = {...state.requirements, ...firstProfile.values};
@@ -491,6 +572,9 @@ function workPage(root) {
     grid.append(card);
   }
   root.append(grid);
+  const selectedWorkload = callout(t('selectedWorkload'), `${t(state.workload)} — ${t(`${state.workload}Desc`)}`, 'info');
+  selectedWorkload.setAttribute('aria-live', 'polite');
+  root.append(selectedWorkload);
 
   const advisor = el('section', null, 'advisor');
   const advisorLead = el('div', null, 'advisor-head');
@@ -577,6 +661,45 @@ function serverNarrative(entry) {
   return {reasons, tradeoffs};
 }
 
+function chassisGraphic(entry) {
+  const figure = el('figure', null, `chassis chassis-${entry.id}`);
+  figure.setAttribute('aria-label', `${entry.name}: ${entry.id === '16912' ? t('tower') : `${entry.rack_u || (entry.id === '16910' ? 1 : 2)}U`}`);
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 320 92');
+  svg.setAttribute('role', 'img');
+  const title = document.createElementNS(svg.namespaceURI, 'title');
+  title.textContent = t('illustrativeChassis');
+  svg.append(title);
+  const body = document.createElementNS(svg.namespaceURI, 'rect');
+  body.setAttribute('x', entry.id === '16912' ? '102' : '12');
+  body.setAttribute('y', entry.id === '16912' ? '5' : entry.id === '16910' ? '27' : '14');
+  body.setAttribute('width', entry.id === '16912' ? '116' : '296');
+  body.setAttribute('height', entry.id === '16912' ? '82' : entry.id === '16910' ? '38' : '64');
+  body.setAttribute('rx', '7');
+  body.setAttribute('class', 'chassis-body');
+  svg.append(body);
+  const bays = entry.id === '16912' ? 4 : entry.id === '16913' ? 6 : 8;
+  for (let index = 0; index < bays; index += 1) {
+    const bay = document.createElementNS(svg.namespaceURI, 'rect');
+    const tower = entry.id === '16912';
+    bay.setAttribute('x', String((tower ? 114 : 25) + (tower ? index % 2 : index) * (tower ? 45 : 25)));
+    bay.setAttribute('y', String((tower ? 18 + Math.floor(index / 2) * 30 : entry.id === '16910' ? 38 : 27)));
+    bay.setAttribute('width', tower ? '32' : '17');
+    bay.setAttribute('height', tower ? '20' : entry.id === '16910' ? '16' : '34');
+    bay.setAttribute('rx', '2');
+    bay.setAttribute('class', 'chassis-bay');
+    svg.append(bay);
+  }
+  const vent = document.createElementNS(svg.namespaceURI, 'circle');
+  vent.setAttribute('cx', entry.id === '16912' ? '193' : '282');
+  vent.setAttribute('cy', '46');
+  vent.setAttribute('r', entry.id === '16910' ? '9' : '17');
+  vent.setAttribute('class', 'chassis-vent');
+  svg.append(vent);
+  figure.append(svg, el('figcaption', t('illustrativeOnly')));
+  return figure;
+}
+
 function serversPage(root) {
   const lead = leadBlock(t('recommendTitle'), t('recommendSub'));
   lead.append(callout(t('workloadFit'), t('positioningNote')));
@@ -596,8 +719,8 @@ function serversPage(root) {
     if (current) top.append(tag(t('selectedServer'), 'good'));
     card.append(top);
     const title = el('div', null, 'server-title');
-    title.append(el('div', entry.short.replace(' Gen11', ''), 'server-code'), el('p', 'HPE ProLiant · Gen11', 'muted small'));
-    card.append(title);
+    title.append(bidi(entry.short.replace(' Gen11', ''), 'server-code'), bidi('HPE ProLiant · Gen11', 'muted small'));
+    card.append(title, chassisGraphic(entry));
 
     const facts = el('div', null, 'server-facts');
     for (const [value, label] of [
@@ -624,8 +747,11 @@ function serversPage(root) {
     const source = btn(t('details'), () => {
       modalFactory = () => {
         const box = el('div');
-        box.append(el('h3', entry.name), el('p', t('serverWarning')));
-        box.append(callout(t('workloadFit'), t('positioningNote')));
+        const modelName = el('h3', entry.name);
+        modelName.dir = 'ltr';
+        modelName.translate = false;
+        box.append(modelName, el('p', t('serverWarning')));
+        box.append(callout(t('workloadFit'), t('positioningNote')), evidence(entry.evidence));
         return box;
       };
       renderModal(entry.short);
@@ -635,7 +761,7 @@ function serversPage(root) {
     compare.append(card);
   }
 
-  root.append(compare, callout(t('coverageTitle'), t('coverageNotice'), 'warning'), btn(t('back'), () => go(1), 'ghost'));
+  root.append(compare, btn(t('back'), () => go(1), 'ghost'));
 }
 
 function renderList(items) {
@@ -658,11 +784,12 @@ function chooseModel(entry) {
       gpuQty: 1,
       psuQty: entry.id === '16913' ? 4 : 2,
       step: 3,
+      visitedSteps: [...new Set([...(state.visitedSteps || [1]), 2, 3])],
     };
     category = 'cpu';
     showMobileSummary = false;
   }, {announce: t('modelChanged')});
-  window.scrollTo({top: 0, behavior: 'smooth'});
+  window.scrollTo({top: 0, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'});
 }
 
 function partTitle(option) {
@@ -698,15 +825,25 @@ function issueState() {
   const direct = directConflicts(state, data).map(item => ({...item, message: t(item.key === 'gpuMemory' ? 'gpuMemoryTooLow' : item.key)}));
   const findings = activeFindings(state, data).map(item => ({...item, message: ruleText(item)}));
   const missing = [];
+  const missingActions = [];
   const missingKeys = {cpu: 'missingCPU', memory: 'missingMemory', storage: 'missingStorage', psu: 'missingPSU'};
-  for (const required of BASE_REQUIRED) if (!chosen(required)) missing.push(t(missingKeys[required]));
-  if (state.model_id === '16913' && !chosen('gpu')) missing.push(t('missingGPU'));
-  if (values.raidError) missing.push(t('invalidRaid'));
+  for (const required of BASE_REQUIRED) if (!chosen(required)) {
+    missing.push(t(missingKeys[required]));
+    missingActions.push(required);
+  }
+  if (state.model_id === '16913' && !chosen('gpu')) {
+    missing.push(t('missingGPU'));
+    missingActions.push('gpu');
+  }
+  if (values.raidError) {
+    missing.push(t('invalidRaid'));
+    missingActions.push('storage');
+  }
   const workloadGaps = [];
-  if (values.memory < state.requirements.ramGB) workloadGaps.push(t('ramBelow'));
-  if (values.cores < state.requirements.cores) workloadGaps.push(t('coresBelow'));
-  if (!state.workload.startsWith('ai') && (values.usable == null ? 0 : values.usable / 1000) < state.requirements.storageTB) workloadGaps.push(t('storageBelow'));
-  if (state.workload.startsWith('ai') && values.gpuMemory && values.gpuMemory < state.requirements.gpuGB) workloadGaps.push(t('gpuMemoryTooLow'));
+  if (chosen('memory') && values.memory < state.requirements.ramGB) workloadGaps.push(t('ramBelow'));
+  if (chosen('cpu') && values.cores < state.requirements.cores) workloadGaps.push(t('coresBelow'));
+  if (!state.workload.startsWith('ai') && chosen('storage') && values.usable != null && values.usable / 1000 < state.requirements.storageTB) workloadGaps.push(t('storageBelow'));
+  if (state.workload.startsWith('ai') && chosen('gpu') && values.gpuMemory < state.requirements.gpuGB) workloadGaps.push(t('gpuMemoryTooLow'));
   return {
     values,
     direct,
@@ -716,6 +853,7 @@ function issueState() {
     conflicts: findings.filter(item => item.status === 'conflict'),
     required: requiredKits(state, data),
     workloadGaps,
+    missingActions: [...new Set(missingActions)],
   };
 }
 
@@ -727,11 +865,12 @@ function changeQuantity(key, value) {
   }, {announce: t('quantityUpdated')});
 }
 
-function categoryStatus(cat) {
+function categoryStatus(cat, issues) {
   const selected = state.selected[cat]?.length;
   const all = data.options.filter(option => option.model_id === state.model_id && option.category === cat);
   const hiddenCurrent = all.some(option => state.selected[cat]?.includes(option.sku) && optionCheck(state, data, option).hidden);
-  if (hiddenCurrent) return 'warning';
+  const hasIssue = issues.direct.some(item => item.category === cat) || issues.findings.some(item => item.domain === cat);
+  if (hiddenCurrent || hasIssue) return 'warning';
   if (selected) return 'done';
   if (BASE_REQUIRED.includes(cat) || (cat === 'gpu' && state.model_id === '16913')) return 'required';
   return 'idle';
@@ -764,16 +903,15 @@ function componentPage(root) {
   const nav = el('nav', null, 'category-nav');
   nav.setAttribute('aria-label', t('category'));
   for (const cat of CATEGORIES) {
-    const statusKey = categoryStatus(cat);
+    const statusKey = categoryStatus(cat, issues);
     const button = el('button', null, `category-link ${category === cat ? 'current' : ''}`.trim());
     button.type = 'button';
     button.append(icon(cat), el('span', t(cat)), tag(t(`categoryState_${statusKey}`), statusKey === 'warning' ? 'amber' : statusKey === 'done' ? 'good' : statusKey === 'required' ? 'outline' : ''));
     if (state.selected[cat]?.length) button.append(el('span', number(state.selected[cat].length), 'count'));
     button.onclick = () => {
-      category = cat;
-      page = 0;
-      query = '';
-      render();
+      withRender(() => {
+        category = cat;
+      });
     };
     nav.append(button);
   }
@@ -784,9 +922,12 @@ function componentPage(root) {
   root.append(workspace);
 
   const mobileTrigger = btn(showMobileSummary ? t('hideSummary') : t('showSummary'), () => {
-    showMobileSummary = !showMobileSummary;
-    render();
+    withRender(() => {
+      showMobileSummary = !showMobileSummary;
+    }, {resetList: false});
   }, 'summary-toggle');
+  mobileTrigger.setAttribute('aria-expanded', String(showMobileSummary));
+  mobileTrigger.setAttribute('aria-controls', 'mobile-summary');
   root.append(mobileTrigger);
   if (showMobileSummary) root.append(summaryPanel(issues, {mobile: true}));
 
@@ -811,11 +952,13 @@ function renderParts(root, issues) {
   search.className = 'search';
   search.placeholder = t('search');
   search.setAttribute('aria-label', t('search'));
+  search.name = 'component-search';
+  search.autocomplete = 'off';
   search.value = query;
   search.oninput = event => {
     query = event.target.value;
     page = 0;
-    renderParts(root, issues);
+    refreshParts(root, issues, {start: event.target.selectionStart, end: event.target.selectionEnd});
   };
   tools.append(search);
 
@@ -861,6 +1004,7 @@ function renderParts(root, issues) {
     const content = el('div', null, 'part-content');
     const title = el('div', partTitle(option), 'part-title');
     title.dir = 'ltr';
+    title.translate = false;
     content.append(title, bidi(option.sku, 'part-sku'), el('p', helperCopy(option), 'part-copy'));
     const specs = el('div', null, 'part-specs');
     if (option.attributes.tdp_w) specs.append(tag(`${option.attributes.tdp_w} W TDP`));
@@ -898,28 +1042,27 @@ function renderParts(root, issues) {
     const pager = el('div', null, 'pagination');
     const previous = btn(t('previous'), () => {
       page -= 1;
-      renderParts(root, issues);
+      refreshParts(root, issues);
     }, 'compact');
     previous.disabled = page === 0;
     const next = btn(t('nextPage'), () => {
       page += 1;
-      renderParts(root, issues);
+      refreshParts(root, issues);
     }, 'compact');
     next.disabled = start + PAGE_SIZE >= visible.length;
     pager.append(previous, el('span', `${number(page + 1)} / ${number(Math.ceil(visible.length / PAGE_SIZE))}`, 'small muted'), next);
     root.append(pager);
   }
 
-  root.append(issuePanel(issues), requirementsPanel(issues), callout(t('coverageTitle'), t('coverageNotice'), 'warning'));
+  root.append(issuePanel(issues), requirementsPanel(issues));
   const action = el('div', null, 'bottom-action');
   const index = CATEGORIES.indexOf(category);
   action.append(
     index < CATEGORIES.length - 1
       ? arrowButton(`${t('next')} · ${t(CATEGORIES[index + 1])}`, () => {
-        category = CATEGORIES[index + 1];
-        query = '';
-        page = 0;
-        render();
+        withRender(() => {
+          category = CATEGORIES[index + 1];
+        });
       })
       : arrowButton(t('continueReview'), () => go(4)),
   );
@@ -947,13 +1090,13 @@ function issuePanel(issues) {
   const panel = el('section', null, 'panel');
   panel.append(el('h3', t('outstandingTitle')));
   const groups = [
-    [issues.missing.length, t('missingSelections'), issues.missing],
-    [issues.direct.length + issues.conflicts.length, t('knownConflictsLabel'), [...issues.direct.map(item => item.message), ...issues.conflicts.map(item => item.message)]],
-    [issues.unknown.length, t('unknownChecksLabel'), issues.unknown.map(item => item.message)],
-    [issues.workloadGaps.length, t('workloadGapsLabel'), issues.workloadGaps],
+    [issues.missing.length, t('missingSelections'), issues.missing, issues.missingActions],
+    [issues.direct.length + issues.conflicts.length, t('knownConflictsLabel'), [...issues.direct.map(item => item.message), ...issues.conflicts.map(item => item.message)], [...issues.direct.map(item => item.category), ...issues.conflicts.map(item => item.domain)]],
+    [issues.unknown.length, t('unknownChecksLabel'), issues.unknown.map(item => item.message), issues.unknown.map(item => item.domain)],
+    [issues.workloadGaps.length, t('advisoriesLabel'), issues.workloadGaps, []],
   ];
   const list = el('div', null, 'issue-groups');
-  for (const [count, label, items] of groups) {
+  for (const [count, label, items, actions] of groups) {
     const card = el('article', null, 'issue-card');
     card.append(el('strong', `${number(count)}`), el('span', label));
     if (items.length) {
@@ -962,6 +1105,15 @@ function issuePanel(issues) {
       card.append(ul);
     } else {
       card.append(el('p', t('noneOpen'), 'small muted'));
+    }
+    const validActions = [...new Set(actions)].filter(cat => CATEGORIES.includes(cat));
+    if (validActions.length) {
+      const links = el('div', null, 'correction-actions');
+      for (const cat of validActions.slice(0, 3)) links.append(btn(`${t('fixIn')} ${t(cat)}`, () => {
+        category = cat;
+        go(3);
+      }, 'compact secondary'));
+      card.append(links);
     }
     list.append(card);
   }
@@ -1001,8 +1153,9 @@ function requirementsPanel(issues) {
 function summaryPanel(issues, {mobile}) {
   const values = issues.values;
   const panel = el('aside', null, `summary ${mobile ? 'mobile-drawer' : ''}`.trim());
+  if (mobile) panel.id = 'mobile-summary';
   const head = el('div', null, 'summary-head');
-  head.append(el('p', t('buildSummary'), 'small'), el('div', model().short, 'server-code'), el('small', `${state.chassis} · ${t(state.workload)}`));
+  head.append(el('p', t('buildSummary'), 'small'), bidi(model().short, 'server-code'), el('small', `${state.chassis} · ${t(state.workload)}`));
   const status = el('div', null, 'summary-status');
   status.append(tag(issues.missing.length ? t('actionNeeded') : t('partialCheck'), issues.missing.length ? 'amber' : 'outline'));
   if (issues.direct.length + issues.conflicts.length) status.append(tag(t('conflict'), 'red'));
@@ -1011,10 +1164,10 @@ function summaryPanel(issues, {mobile}) {
 
   const metrics = el('div', null, 'summary-metrics');
   for (const [value, unit, label] of [
-    [values.cores, '', t('physicalCores')],
-    [values.memory, 'GB', t('installedRAM')],
-    [values.usable == null ? '—' : values.usable / 1000, 'TB', t('usableStorage')],
-    [values.gpuMemory || '—', 'GB', t('gpuMemory')],
+    [chosen('cpu') ? values.cores : t('notSelected'), '', t('physicalCores')],
+    [chosen('memory') ? values.memory : t('notSelected'), chosen('memory') ? 'GB' : '', t('installedRAM')],
+    [chosen('storage') ? values.usable == null ? t('unknownValue') : values.usable / 1000 : t('notSelected'), chosen('storage') && values.usable != null ? 'TB' : '', t('usableStorage')],
+    [chosen('gpu') ? values.gpuMemory : state.workload.startsWith('ai') || state.model_id === '16913' ? t('notSelected') : t('notApplicable'), chosen('gpu') ? 'GB' : '', t('gpuMemory')],
   ]) {
     const metric = el('div', null, 'summary-metric');
     metric.append(el('strong', `${typeof value === 'number' ? number(value) : value} ${unit}`), el('small', label));
@@ -1025,7 +1178,13 @@ function summaryPanel(issues, {mobile}) {
   for (const cat of ['cpu', 'memory', 'storage', 'gpu', 'psu']) {
     const option = chosen(cat);
     const row = el('div', null, 'summary-item');
-    row.append(el('span', t(cat)), option ? bidi(`${quantity(state, option)} × ${option.sku}`, 'summary-code') : el('span', t('notSelected')));
+    const value = el('span', null, 'summary-part');
+    if (option) {
+      value.append(el('strong', `${number(quantity(state, option))} × ${partTitle(option)}`), bidi(option.sku, 'summary-code'));
+    } else {
+      value.append(el('span', cat === 'gpu' && !state.workload.startsWith('ai') && state.model_id !== '16913' ? t('notApplicable') : t('notSelected')));
+    }
+    row.append(el('span', t(cat)), value);
     items.append(row);
   }
   const target = el('div', null, 'progress-block');
@@ -1040,7 +1199,7 @@ function summaryPanel(issues, {mobile}) {
   const footer = el('div', null, 'summary-footer');
   footer.append(el('p', t('localSaveHint'), 'small muted'));
   footer.append(state.step === 4 ? btn(t('editBuild'), () => go(3), 'primary') : arrowButton(t('continueReview'), () => go(4)));
-  if (mobile) footer.append(btn(t('hideSummary'), () => { showMobileSummary = false; render(); }, 'ghost'));
+  if (mobile) footer.append(btn(t('hideSummary'), () => withRender(() => { showMobileSummary = false; }, {resetList: false}), 'ghost'));
 
   panel.append(head, metrics, items, footer);
   return panel;
@@ -1048,16 +1207,11 @@ function summaryPanel(issues, {mobile}) {
 
 function reviewPage(root) {
   const issues = issueState();
+  const openCount = issues.missing.length + issues.direct.length + issues.conflicts.length + issues.unknown.length + issues.workloadGaps.length;
+  const reportStatus = callout(openCount ? t('actionNeeded') : t('partialCheck'), openCount ? `${number(openCount)} ${t('outstandingSummary')}` : t('noOpenButLimited'), openCount ? 'warning' : 'info');
+  reportStatus.classList.add('report-status');
+  root.append(reportStatus);
   root.append(leadBlock(t('reviewTitle'), t('reviewSub')));
-
-  const metrics = el('div', null, 'status-grid');
-  metrics.append(
-    statusCard(t('physicalCores'), number(issues.values.cores), t('coreTarget'), 'good'),
-    statusCard(t('installedRAM'), `${number(issues.values.memory)} GB`, t('ramTarget'), 'good'),
-    statusCard(t('usableStorage'), issues.values.usable == null ? '—' : `${number(issues.values.usable / 1000)} TB`, t('storageTarget'), 'good'),
-    statusCard(t('gpuMemory'), issues.values.gpuMemory ? `${number(issues.values.gpuMemory)} GB` : '—', t('gpuTarget'), 'good'),
-  );
-  root.append(metrics);
 
   const grid = el('div', null, 'review-grid');
   const left = el('div', null, 'review-main');
@@ -1071,47 +1225,56 @@ function reviewPage(root) {
   const bom = el('section', null, 'panel');
   bom.append(el('h2', t('bom')), el('p', `${model().name} · ${state.chassis}`, 'muted small'));
   const table = el('table');
-  const thead = el('tr');
-  [t('category'), t('part'), t('sku'), t('qty')].forEach(text => thead.append(el('th', text)));
-  table.append(thead);
+  const thead = document.createElement('thead');
+  const headRow = el('tr');
+  [t('category'), t('part'), t('sku'), t('qty')].forEach(text => {
+    const cell = el('th', text);
+    cell.scope = 'col';
+    headRow.append(cell);
+  });
+  thead.append(headRow);
+  const tbody = document.createElement('tbody');
   const base = el('tr');
-  [t('step2'), model().short, t('baseServer'), '1'].forEach(text => base.append(el('td', text)));
-  table.append(base);
+  [t('step2'), model().name, t('unknownChassisSku'), number(1)].forEach(text => base.append(el('td', text)));
+  tbody.append(base);
   for (const option of selectedOptions(state, data)) {
     const row = el('tr');
-    row.append(el('td', t(option.category)), el('td', partTitle(option), 'code'), el('td', option.sku, 'code'), el('td', number(quantity(state, option)), 'qty'));
-    table.append(row);
+    const skuCell = el('td');
+    skuCell.append(bidi(option.sku, 'code'));
+    row.append(el('td', t(option.category)), el('td', partTitle(option)), skuCell, el('td', number(quantity(state, option)), 'qty'));
+    tbody.append(row);
   }
+  table.append(thead, tbody);
   const scroll = el('div', null, 'table-scroll');
   scroll.append(table);
   bom.append(scroll, el('p', t('noPrice'), 'small muted'));
   left.append(bom);
 
   const checks = el('section', null, 'panel');
-  checks.append(el('h2', t('requirementsCheck')));
-  if (!issues.missing.length && !issues.direct.length && !issues.findings.length) {
-    checks.append(checkRow(t('passed'), t('reviewSummary'), 'blue'));
-  }
-  for (const item of issues.missing) checks.append(checkRow(t('unknown'), item, 'amber'));
+  checks.append(el('h2', t('structuredChecks')));
+  if (!issues.direct.length && !issues.findings.length) checks.append(checkRow(t('noneOpen'), t('noStructuredFindings'), 'blue'));
   for (const item of issues.direct) checks.append(checkRow(t('conflict'), item.message, 'red'));
   for (const item of issues.findings) {
     const row = checkRow(t(item.status === 'conflict' ? 'conflict' : 'unknown'), item.message, item.status === 'conflict' ? 'red' : 'amber');
     row.append(evidence(item.evidence));
     checks.append(row);
   }
-  checks.append(checkRow(t('unknown'), t('coverageNotice'), 'amber'));
+  checks.append(checkRow(t('reviewRequired'), t('coverageNotice'), 'amber'));
   left.append(checks, requirementsPanel(issues));
 
   const fit = el('section', null, 'panel');
   fit.append(el('h2', t('workloadFit')));
   const fitRows = [
-    [issues.values.memory, state.requirements.ramGB, t('installedRAM'), 'GB', 'ramBelow'],
-    [issues.values.cores, state.requirements.cores, t('physicalCores'), '', 'coresBelow'],
+    [issues.values.memory, state.requirements.ramGB, t('installedRAM'), 'GB', 'ramBelow', Boolean(chosen('memory'))],
+    [issues.values.cores, state.requirements.cores, t('physicalCores'), '', 'coresBelow', Boolean(chosen('cpu'))],
   ];
-  if (!state.workload.startsWith('ai')) fitRows.push([issues.values.usable == null ? 0 : issues.values.usable / 1000, state.requirements.storageTB, t('usableStorage'), 'TB', 'storageBelow']);
-  else fitRows.push([issues.values.gpuMemory || 0, state.requirements.gpuGB, t('gpuMemory'), 'GB', 'gpuMemoryTooLow']);
-  for (const [actual, target, label, unit, key] of fitRows) {
-    fit.append(checkRow(actual >= target ? '✓' : t('unknown'), actual >= target ? `${label}: ${number(actual)} ${unit} / ${number(target)} ${unit}`.trim() : t(key), actual >= target ? 'blue' : 'amber'));
+  if (!state.workload.startsWith('ai')) fitRows.push([issues.values.usable == null ? null : issues.values.usable / 1000, state.requirements.storageTB, t('usableStorage'), 'TB', 'storageBelow', Boolean(chosen('storage'))]);
+  else fitRows.push([issues.values.gpuMemory, state.requirements.gpuGB, t('gpuMemory'), 'GB', 'gpuMemoryTooLow', Boolean(chosen('gpu'))]);
+  for (const [actual, target, label, unit, key, selected] of fitRows) {
+    const passed = selected && actual != null && actual >= target;
+    const status = !selected ? t('notSelected') : actual == null ? t('unknownValue') : passed ? '✓' : t('unknown');
+    const message = !selected ? `${label}: ${t('notSelected')}` : actual == null ? `${label}: ${t('unknownValue')}` : passed ? `${label}: ${number(actual)} ${unit} / ${number(target)} ${unit}`.trim() : t(key);
+    fit.append(checkRow(status, message, passed ? 'blue' : 'amber'));
   }
   fit.append(callout(t('profileGuidance'), guidance()));
   left.append(fit);
@@ -1163,6 +1326,11 @@ function exportPayload() {
       required_accessories: issues.required.map(item => ({options: item.any, quantity: item.quantity, message: ruleText(item.rule)})),
       workload_gaps: issues.workloadGaps,
     },
+    limitations: {
+      qualification: 'technical_review_required',
+      notice: t('coverageNotice'),
+      coverage: data.coverage,
+    },
     coverage: data.coverage,
   };
 }
@@ -1179,8 +1347,10 @@ function exportCSV() {
   };
   const rows = [
     [t('category'), t('part'), t('sku'), t('qty'), t('assurance')],
-    [t('step2'), model().name, 'CHASSIS SKU TO BE VERIFIED', 1, t('reviewRequired')],
+    [t('step2'), model().name, t('unknownChassisSku'), 1, t('reviewRequired')],
     ...selectedOptions(state, data).map(option => [t(option.category), partTitle(option), option.sku, quantity(state, option), t('reviewRequired')]),
+    [],
+    [t('limitations'), t('coverageNotice'), '', '', t('reviewRequired')],
   ];
   download('ARIA-HPE-BOM.csv', `\ufeff${rows.map(row => row.map(safe).join(',')).join('\r\n')}`, 'text/csv;charset=utf-8');
 }
@@ -1191,6 +1361,11 @@ function sanitizeDraft(savedState) {
   if (typeof savedState.workload === 'string') next.workload = savedState.workload;
   if (savedState.requirements && typeof savedState.requirements === 'object') next.requirements = {...next.requirements, ...savedState.requirements};
   if (Number.isInteger(savedState.step) && savedState.step >= 1 && savedState.step <= 2) next.step = savedState.step;
+  next.workloadConfirmed = savedState.workloadConfirmed === true || next.step === 2;
+  const visited = Array.isArray(savedState.visitedSteps)
+    ? savedState.visitedSteps.filter(step => Number.isInteger(step) && step >= 1 && step <= 2)
+    : [];
+  next.visitedSteps = [...new Set([1, ...visited, next.step])];
   return next;
 }
 

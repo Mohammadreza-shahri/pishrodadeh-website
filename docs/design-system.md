@@ -18,13 +18,14 @@
 ## Components
 - **Workload cards:** plain-language entry points with consistent iconography and state badges.
 - **Advisor panels:** guided profiles plus editable sizing inputs.
-- **Server comparison cards:** show why a platform is relevant, tradeoffs, and blockers before selection.
+- **Server comparison cards:** use compact, non-product-specific chassis diagrams and show why a platform is relevant, tradeoffs, blockers, and source evidence before selection.
 - **Category navigation:** expose required/selected/problem states per component group.
 - **Part cards:** pair technical identifiers with plain-language summaries and source-backed state chips.
-- **Summary panel/drawer:** persistent on desktop, explicit drawer on smaller screens.
-- **Issue panels:** separate missing selections, known conflicts, unresolved checks, and workload gaps.
+- **Summary panel/drawer:** persistent on desktop, explicit expandable region on smaller screens; component name and quantity are primary while SKU is secondary.
+- **Issue panels:** separate missing selections, known conflicts, unresolved checks, and workload advisories, with correction links to affected groups.
 - **Dialogs:** modal evidence view with focus trapping and focus return.
 
 ## Motion and responsiveness
 - Motion is limited to small entrance and hover transitions and is disabled for `prefers-reduced-motion`.
-- Layout targets desktop comparison, tablet review, and mobile summary drawer workflows without changing the underlying product flow.
+- Layout targets desktop comparison, tablet review, and a single-column mobile category workflow without changing the underlying product flow.
+- A skip link, visible focus treatment, modal scroll containment, translation-isolated identifiers, and long-text wrapping support keyboard, assistive-technology, RTL/LTR, and increased-text use.
