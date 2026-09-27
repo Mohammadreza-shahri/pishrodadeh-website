@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {initial,optionCheck,activeFindings,directConflicts,requiredKits,stats,expression,recommend,validateImport} from '../dist/engine.js';
+const data=JSON.parse(readFileSync(new URL('../dist/catalog.json',import.meta.url)));let count=0;
+function test(name,fn){fn();count++;console.log('PASS '+name);}
+function setup(id='16911'){return {...initial(),model_id:id,chassis:id==='16913'?'4DW':'8SFF'};}
+const option=(s,sku)=>data.options.find(o=>o.model_id===s.model_id&&o.sku===sku);
+const cpu=(s,name)=>data.options.find(o=>o.model_id===s.model_id&&o.category==='cpu'&&o.attributes.model===name);
+test('Source-linked categories available',()=>{for(const cat of ['cpu','memory','storage','controller','backplane','hba','gpu','riser','psu','cooling','kits'])assert(data.options.some(o=>o.category===cat));});
+test('No cross-platform options',()=>{const s=setup();const o=data.options.find(o=>o.model_id==='16912');assert(optionCheck(s,data,o).hidden);});
+test('Three-valued logic',()=>{assert.equal(expression({op:'all',args:[false,null]},{}),false);assert.equal(expression({op:'not',arg:null},{}),null);assert.equal(expression({op:'any',args:[true,null]},{}),true);});
+test('3508U rejects two CPUs',()=>{const s=setup();s.cpuQty=2;assert(optionCheck(s,data,cpu(s,'3508U')).hidden);});
+test('3508U excludes 96GB 5600',()=>{const s=setup();s.selected.cpu=[cpu(s,'3508U').sku];const m=data.options.find(o=>o.model_id===s.model_id&&o.category==='memory'&&o.attributes.capacity_gb===96&&o.attributes.speed_mts===5600);assert(optionCheck(s,data,m).hidden);});
+test('Existing invalid memory is not accepted again',()=>{const s=setup();s.selected.cpu=[cpu(s,'3508U').sku];const m=data.options.find(o=>o.model_id===s.model_id&&o.category==='memory'&&o.attributes.capacity_gb===96&&o.attributes.speed_mts===5600);s.selected.memory=[m.sku];assert(optionCheck(s,data,m).hidden);});
+test('DDR4800 excluded on DL380 fifth generation',()=>{const s=setup();s.selected.cpu=[cpu(s,'3508U').sku];const m=data.options.find(o=>o.model_id===s.model_id&&o.category==='memory'&&o.attributes.speed_mts===4800);assert(optionCheck(s,data,m).hidden);});
+test('Secondary riser rejects single CPU',()=>{const s=setup();const o=data.options.find(o=>o.model_id===s.model_id&&o.category==='riser'&&o.attributes.position==='secondary');assert(o);assert(optionCheck(s,data,o).hidden);s.cpuQty=2;assert(!optionCheck(s,data,o).hidden);});
+test('ML350 thermal kit dependencies',()=>{const s=setup('16912');s.cpuQty=2;s.selected.cpu=[data.options.find(o=>o.model_id===s.model_id&&o.category==='cpu'&&o.attributes.tdp_w>=300).sku];const needs=requiredKits(s,data).flatMap(n=>n.any);assert(needs.includes('P47224-B21'));assert(needs.includes('P47219-B21'));assert(needs.includes('P47902-B21'));});
+test('Cached controller requires battery or capacitor',()=>{const s=setup();s.selected.controller=['P47777-B21'];assert(requiredKits(s,data).some(n=>n.any.includes('P01366-B21')));});
+test('Highline PSU rejects 110 V',()=>{const s=setup();s.inputV=110;const o=data.options.find(o=>o.model_id===s.model_id&&o.category==='psu'&&o.attributes.watts===1600);assert(optionCheck(s,data,o).hidden);});
+test('DL380a excludes SAS',()=>{const s=setup('16913');s.cpuQty=2;const fake={model_id:'16913',sku:'synthetic-sas',category:'storage',attributes:{protocol:'SAS',form:'SFF'},evidence:[]};const d={...data,options:[...data.options,fake]};assert(optionCheck(s,d,fake).hidden);});
+test('Form factor excludes EDSFF on SFF chassis',()=>{const s=setup();const o=data.options.find(o=>o.model_id===s.model_id&&o.category==='storage'&&o.attributes.form==='EDSFF');assert(optionCheck(s,data,o).hidden);});
+test('Source resolution math',()=>{const s=setup();s.selected.cpu=['P49614-B21'];s.cpuQty=2;s.selected.memory=['P64707-B21'];s.memoryQty=8;assert.equal(stats(s,data).cores,64);assert.equal(stats(s,data).memory,512);});
+test('RAID parity and minimum',()=>{const s=setup();const d=data.options.find(o=>o.model_id===s.model_id&&o.category==='storage');s.selected.storage=[d.sku];s.driveQty=4;s.raid='6';assert.equal(stats(s,data).usable,2*d.attributes.capacity_gb);s.driveQty=3;assert(stats(s,data).raidError);});
+test('Workload reorders models',()=>{assert.equal(recommend(data,'ai_training')[0].id,'16913');assert.equal(recommend(data,'business')[0].id,'16912');});
+test('Filtered checks do not mutate build',()=>{const s=setup();const before=JSON.stringify(s);for(const o of data.options.filter(o=>o.model_id===s.model_id))optionCheck(s,data,o);assert.equal(JSON.stringify(s),before);});
+test('Source evidence present on every option',()=>{for(const o of data.options){assert(o.evidence.length);assert(o.evidence[0].quote.includes(o.sku));assert(o.evidence[0].end>o.evidence[0].start);}});
+test('Import rejects unknown SKU',()=>{const s=setup();s.selected.cpu=['bogus'];assert.throws(()=>validateImport(s,data));});
+console.log(`${count} focused tests passed.`);
