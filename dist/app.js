@@ -188,7 +188,7 @@ function field(label, value, onChange, {type = 'number', min = 1, max = 100000, 
       input.append(option);
     }
     input.value = String(value);
-  } else if (state.advisorMode === 'advanced') {
+  } else {
     input = el('input');
     input.type = type;
     input.value = value ?? '';
@@ -1692,15 +1692,18 @@ function render() {
 }
 
 async function start() {
+  let response;
   try {
-    const response = await fetch('./catalog.json');
-    if (!response.ok) throw new Error('Catalog unavailable');
+    response = await fetch('./catalog.json');
+    if (!response.ok) throw new Error(`Catalog request failed: ${response.status}`);
     data = await response.json();
-    restoreState();
-    render();
-  } catch {
+  } catch (error) {
+    console.error('Unable to load catalog', error);
     app.replaceChildren(el('p', t('loadFailed'), 'loading'), btn(t('retry'), start, 'primary'));
+    return;
   }
+  restoreState();
+  render();
 }
 
 start();
