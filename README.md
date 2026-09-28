@@ -55,10 +55,12 @@ Open `http://127.0.0.1:8000/`.
 ## Browser behavior
 
 - Persian is the default language; English is available without losing the active configuration.
+- Persian UI text uses the bundled Vazirmatn web font for consistent rendering across devices.
 - Configuration state is stored locally in the browser only and validated before restore.
 - The summary remains persistent on desktop and becomes an explicit drawer on smaller screens.
 - CSV output is UTF-8 BOM encoded for Persian spreadsheet compatibility and includes formula-injection protection.
 - JSON output includes unresolved issues and required accessory findings.
+- The technical report can be printed/saved as a branded PDF and shared through a prefilled WhatsApp handoff to +98 912 362 4305; the PDF remains a user attachment because browsers cannot silently attach files to WhatsApp.
 
 ## Deployment
 
