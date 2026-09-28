@@ -55,7 +55,7 @@ Open `http://127.0.0.1:8000/`.
 ## Browser behavior
 
 - Persian is the default language; English is available without losing the active configuration.
-- Persian UI text uses the bundled Vazirmatn web font for consistent rendering across devices.
+- Persian UI text prefers IRANSans, IRANSansX, and Iran Sans when installed, with the bundled Vazirmatn web font as a safe fallback. A licensed IRANSans webfont can be added to `dist/` later if a copy is provided.
 - Configuration state is stored locally in the browser only and validated before restore.
 - The summary remains persistent on desktop and becomes an explicit drawer on smaller screens.
 - CSV output is UTF-8 BOM encoded for Persian spreadsheet compatibility and includes formula-injection protection.

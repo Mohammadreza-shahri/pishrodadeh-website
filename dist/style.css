@@ -26,7 +26,7 @@
 }
 *{box-sizing:border-box}
 html{color-scheme:light}
-body{margin:0;background:linear-gradient(180deg,#f8fbff 0,#f3f6fb 18%,#eef3f9 100%);color:var(--ink);font:16px/1.75 Vazirmatn,Tahoma,"Segoe UI",Arial,sans-serif}
+body{margin:0;background:linear-gradient(180deg,#f8fbff 0,#f3f6fb 18%,#eef3f9 100%);color:var(--ink);font:16px/1.75 IRANSans,"IRANSansX","Iran Sans",Vazirmatn,Tahoma,"Segoe UI",Arial,sans-serif}
 [lang=en] body{font-family:Inter,"Segoe UI",Arial,sans-serif}
 button,input,select{font:inherit}
 a,button,input,select,summary{touch-action:manipulation}
