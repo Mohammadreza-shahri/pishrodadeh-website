@@ -1328,7 +1328,7 @@ function quotationForm() {
   mobile.placeholder = t('quoteMobilePlaceholder');
   mobile.setAttribute('aria-describedby', 'quote-mobile-hint');
   mobileLabel.append(mobile, el('small', t('quoteMobileHint'), 'field-hint'));
-  mobile.lastElementChild.id = 'quote-mobile-hint';
+  mobileLabel.lastElementChild.id = 'quote-mobile-hint';
 
   const nameLabel = el('label', null, 'field');
   nameLabel.append(el('span', t('quoteName'), 'field-label'));
