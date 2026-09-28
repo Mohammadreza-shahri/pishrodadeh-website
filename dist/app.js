@@ -404,16 +404,22 @@ function layout() {
   app.replaceChildren();
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
-  document.title = lang === 'fa' ? 'پیشرو داده | پیکربندی سرور HPE' : 'Pishrodadeh | HPE Server Configurator';
+  document.title = lang === 'fa' ? 'آریامن | پیکربندی سرور HPE' : 'Ariaman | HPE Server Configurator';
 
   const shell = el('div', null, 'shell');
   const header = el('header', null, 'site-header');
   const brand = el('div', null, 'brand');
-  const wordmark = el('span', 'ARIA', 'wordmark');
-  wordmark.dir = 'ltr';
+  const logoLink = el('a', null, 'brand-logo');
+  logoLink.href = 'https://aria-man.com/';
+  logoLink.target = '_blank';
+  logoLink.rel = 'noreferrer';
+  const logo = document.createElement('img');
+  logo.src = './ariaman-logo.png';
+  logo.alt = lang === 'fa' ? 'نشان آریامن' : 'Ariaman logo';
+  logoLink.append(logo);
   const label = el('div', null, 'brand-copy');
-  label.append(el('small', 'PISHRODADEH / پیشرو داده'), el('strong', t('brand')));
-  brand.append(wordmark, label);
+  label.append(el('small', lang === 'fa' ? 'فروشگاه سرور و تجهیزات شبکه' : 'HPE servers & network equipment'), el('strong', t('brand')));
+  brand.append(logoLink, label);
 
   const actions = el('div', null, 'header-actions');
   actions.append(tag(t('private'), 'dark'));
