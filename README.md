@@ -19,9 +19,7 @@ The configurator helps enterprise IT buyers, infrastructure engineers, and procu
 This release does **not** claim full HPE qualification.
 
 - Unknown compatibility states remain unresolved and visible.
-- Visible options are source-listed; only options proven incompatible by encoded checks are filtered. Unknown checks remain visible for review, and no known conflict is not full compatibility approval.
-- Server recommendations are ranked from workload order and encoded capacity bounds, not a computed fit score; a target gap is advisory and does not suppress a source-listed option.
-- The largest listed drive is shown per drive only. The catalog does not support a total storage-bay or storage-path limit.
+- Visible options are source-listed and pass encoded checks, but complete power, thermal, cabling, firmware, and physical-layout validation is still required.
 - RAID capacity math is advisory only.
 - PSU wattage is nominal only and not a certified power budget.
 - No prices, fake stock, fake benchmarks, or ordering workflow are shown.
@@ -67,9 +65,7 @@ Open `http://127.0.0.1:8000/`.
 - Contact details are not saved by the configurator. The configuration draft stays on the current device; the quotation request is shared with Ariaman only if the user sends the WhatsApp message.
 - The summary remains persistent on desktop and becomes an explicit drawer on smaller screens.
 - Step completion reflects actual workload, server, and required-component state rather than navigation history.
-- Server recommendations show target context, chassis form, listed expansion information, and expandable source/tradeoff details; a rack-only preference excludes tower systems.
-- Part choices distinguish source-listed options with no known conflict from selected choices whose available checks passed, below-target options, review-required choices, and known incompatibilities.
-- The technical report leads with target versus achieved capacity and BOM, then separates missing selections, known conflicts, unknown rule outcomes, and capacity advisories.
+- The technical report separates missing selections, known conflicts, unknown rule outcomes, and capacity advisories, with links back to affected component groups.
 - CSV output is UTF-8 BOM encoded for Persian spreadsheet compatibility and includes formula-injection protection.
 - CSV and JSON outputs retain the technical-review limitation; JSON also separates unresolved issues and required accessory findings.
 - The technical report can be printed/saved as a branded PDF and shared through a prefilled WhatsApp handoff to 09123624305; the PDF remains a user attachment because browsers cannot silently attach files to WhatsApp.
