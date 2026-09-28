@@ -31,8 +31,10 @@ This release does **not** claim full HPE qualification.
 - `dist/app.js` — UI flow, bilingual rendering, persistence, reporting, and exports
 - `dist/engine.js` — deterministic compatibility logic and calculations
 - `dist/i18n.js` — Persian and English interface strings
+- `dist/quote.js` — Iranian mobile number normalization for quote requests
 - `dist/catalog.json` — source-backed model, option, and rule snapshot
 - `tools/test-engine.mjs` — focused engine regression tests
+- `tools/test-quote.mjs` — quotation contact validation tests
 - `tools/build-data.py` — catalog rebuild utility
 - `docs/design-system.md` — concise UI system notes
 - `docs/verification-report.md` — completed vs untested verification areas
@@ -46,7 +48,9 @@ Run the existing checks, then serve `dist/` over HTTP:
 node --check dist/app.js
 node --check dist/engine.js
 node --check dist/i18n.js
+node --check dist/quote.js
 node tools/test-engine.mjs
+node tools/test-quote.mjs
 python -m http.server 8000 --directory dist
 ```
 
@@ -57,12 +61,14 @@ Open `http://127.0.0.1:8000/`.
 - Persian is the default language; English is available without losing the active configuration.
 - Persian UI text prefers IRANSans, IRANSansX, and Iran Sans when installed, with the bundled Vazirmatn web font as a safe fallback. A licensed IRANSans webfont can be added to `dist/` later if a copy is provided.
 - Configuration state is stored locally in the browser only and validated before restore.
+- The final quotation form requires a name and Iranian mobile number; email is optional. Selected configuration details are included in a prefilled WhatsApp message, and the user reviews and sends it themselves.
+- Contact details are not saved by the configurator. The configuration draft stays on the current device; the quotation request is shared with Ariaman only if the user sends the WhatsApp message.
 - The summary remains persistent on desktop and becomes an explicit drawer on smaller screens.
 - Step completion reflects actual workload, server, and required-component state rather than navigation history.
 - The technical report separates missing selections, known conflicts, unknown rule outcomes, and capacity advisories, with links back to affected component groups.
 - CSV output is UTF-8 BOM encoded for Persian spreadsheet compatibility and includes formula-injection protection.
 - CSV and JSON outputs retain the technical-review limitation; JSON also separates unresolved issues and required accessory findings.
-- The technical report can be printed/saved as a branded PDF and shared through a prefilled WhatsApp handoff to +98 912 362 4305; the PDF remains a user attachment because browsers cannot silently attach files to WhatsApp.
+- The technical report can be printed/saved as a branded PDF and shared through a prefilled WhatsApp handoff to 09123624305; the PDF remains a user attachment because browsers cannot silently attach files to WhatsApp.
 
 ## Deployment
 

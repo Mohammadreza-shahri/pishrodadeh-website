@@ -4,7 +4,9 @@
 - `node --check dist/app.js`
 - `node --check dist/engine.js`
 - `node --check dist/i18n.js`
+- `node --check dist/quote.js`
 - `node tools/test-engine.mjs`
+- `node tools/test-quote.mjs`
 - Headless Chromium verification against a local HTTP server (`python -m http.server 8000 --directory dist`)
 
 ## Browser flows verified in headless Chromium
@@ -15,6 +17,8 @@
 - Mobile summary drawer opens and closes.
 - Empty search results render a useful empty state.
 - CSV export, JSON export, and print-to-PDF output were generated.
+- Quotation request validates a required name and Iranian mobile number, accepts Persian/Arabic numerals and international Iranian prefixes, and leaves email optional.
+- The WhatsApp draft includes contact details and selected server/component details; the user must review and send it. Configuration remains in browser storage, while contact fields are not persisted.
 
 ## Representative compatibility scenarios exercised
 - Single-socket CPU conflict becomes visible after increasing CPU quantity to two.
