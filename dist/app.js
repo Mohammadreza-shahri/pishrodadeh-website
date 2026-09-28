@@ -14,6 +14,7 @@ import {
   validateImport,
 } from './engine.js';
 import {strings} from './i18n.js';
+import {normalizeIranMobile} from './quote.js';
 
 const STORAGE_KEY = 'aria-configurator-v3';
 const STORAGE_VERSION = 1;
@@ -1303,11 +1304,77 @@ function reviewPage(root) {
   const output = el('section', null, 'panel');
   output.append(el('h2', t('output')));
   const buttons = el('div', null, 'row wrap');
-  buttons.append(btn(t('downloadBOM'), exportCSV, 'primary'), btn(t('downloadJSON'), exportJSON, 'secondary'), btn(t('print'), () => window.print(), 'secondary'), btn(t('whatsapp'), shareWhatsApp, 'secondary'));
-  output.append(buttons, el('p', t('whatsappNote'), 'small muted'));
+  buttons.append(btn(t('downloadBOM'), exportCSV, 'secondary'), btn(t('downloadJSON'), exportJSON, 'secondary'), btn(t('print'), () => window.print(), 'secondary'));
+  output.append(buttons, el('p', t('localSaveHint'), 'small muted'), quotationForm());
   left.append(output);
 
   root.append(grid);
+}
+
+function quotationForm() {
+  const form = el('form', null, 'quotation-form');
+  form.append(el('h3', t('quoteTitle')), el('p', t('quoteIntro'), 'small muted'));
+
+  const mobileLabel = el('label', null, 'field');
+  mobileLabel.append(el('span', t('quoteMobile'), 'field-label'));
+  const mobile = el('input');
+  mobile.type = 'tel';
+  mobile.name = 'mobile';
+  mobile.id = 'quote-mobile';
+  mobile.autocomplete = 'tel-national';
+  mobile.inputMode = 'tel';
+  mobile.required = true;
+  mobile.maxLength = 20;
+  mobile.placeholder = t('quoteMobilePlaceholder');
+  mobile.setAttribute('aria-describedby', 'quote-mobile-hint');
+  mobileLabel.append(mobile, el('small', t('quoteMobileHint'), 'field-hint'));
+  mobile.lastElementChild.id = 'quote-mobile-hint';
+
+  const nameLabel = el('label', null, 'field');
+  nameLabel.append(el('span', t('quoteName'), 'field-label'));
+  const name = el('input');
+  name.type = 'text';
+  name.name = 'name';
+  name.id = 'quote-name';
+  name.autocomplete = 'name';
+  name.required = true;
+  name.maxLength = 100;
+  nameLabel.append(name);
+
+  const emailLabel = el('label', null, 'field');
+  emailLabel.append(el('span', t('quoteEmail'), 'field-label'));
+  const email = el('input');
+  email.type = 'email';
+  email.name = 'email';
+  email.id = 'quote-email';
+  email.autocomplete = 'email';
+  email.maxLength = 254;
+  emailLabel.append(email);
+
+  const fields = el('div', null, 'quotation-fields');
+  fields.append(mobileLabel, nameLabel, emailLabel);
+  form.append(fields, el('p', t('quoteSaveNotice'), 'quote-save-note'));
+  const submit = el('button', t('whatsapp'), 'button primary');
+  submit.type = 'submit';
+  form.append(submit);
+
+  mobile.addEventListener('input', () => mobile.setCustomValidity(''));
+  form.addEventListener('submit', event => {
+    event.preventDefault();
+    const normalizedMobile = normalizeIranMobile(mobile.value);
+    if (!normalizedMobile) {
+      mobile.setCustomValidity(t('quotePhoneInvalid'));
+      mobile.reportValidity();
+      return;
+    }
+    mobile.setCustomValidity('');
+    shareWhatsApp({
+      name: name.value.trim(),
+      mobile: normalizedMobile,
+      email: email.value.trim(),
+    });
+  });
+  return form;
 }
 
 function checkRow(label, text, color) {
@@ -1355,16 +1422,32 @@ function exportJSON() {
   download(`ARIA-${model().short.replaceAll(' ', '-')}.json`, JSON.stringify(exportPayload(), null, 2), 'application/json');
 }
 
-function shareWhatsApp() {
+function shareWhatsApp(contact) {
   const issues = issueState();
   const unresolved = issues.missing.length + issues.direct.length + issues.findings.length;
+  const selections = selectedOptions(state, data);
   const text = [
-    `${t('brandName')} · ${t('companyName')}`,
+    t('quoteMessageTitle'),
+    `${t('quoteName')}: ${contact.name}`,
+    `${t('quoteMobile')}: ${contact.mobile}`,
+    contact.email ? `${t('quoteEmail')}: ${contact.email}` : null,
+    '',
     `${t('step2')}: ${model().short}`,
     `${t('workloadTitle')}: ${t(state.workload)}`,
+    `${t('chassis')}: ${state.chassis}`,
+    `${t('voltage')}: ${number(state.inputV)} V`,
+    `${t('thermal')}: ${t(state.cooling)}`,
+    `${t('raid')}: ${state.raid}`,
+    `${t('ramTarget')}: ${number(state.requirements.ramGB)} GB`,
+    `${t('coreTarget')}: ${number(state.requirements.cores)}`,
+    state.requirements.storageTB ? `${t('storageTarget')}: ${number(state.requirements.storageTB)} TB` : null,
+    state.workload.startsWith('ai') ? `${t('gpuTarget')}: ${number(state.requirements.gpuGB)} GB` : null,
+    selections.length ? t('quoteParts') : t('quoteNoParts'),
+    ...selections.map(option => `- ${t(option.category)}: ${partTitle(option)} (${option.sku}) × ${number(quantity(state, option))}`),
     `${t('output')}: ${unresolved ? `${unresolved} ${t('unknown')}` : t('passed')}`,
-    'https://staging.aria-man.com/',
-  ].join('\n');
+    t('quoteReviewNotice'),
+    window.location.href,
+  ].filter(Boolean).join('\n');
   window.open(`https://wa.me/989123624305?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 }
 

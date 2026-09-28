@@ -72,6 +72,15 @@ details{margin-top:12px}summary{cursor:pointer;color:var(--muted)}
 @media print{body{background:#fff;color:#000}.shell{max-width:none;padding:0}.site-header,.hero,.stepper,.category-nav,.summary-toggle,.button,.site-footer,.dialog-backdrop{display:none!important}.print-brand{display:flex;align-items:center;justify-content:space-between;gap:18px;margin:0 0 22px;padding:0 0 14px;border-bottom:2px solid #0e2038;color:#0e2038}.print-brand-mark{font:800 22px/1 Arial;letter-spacing:3px}.print-brand-copy{display:flex;flex-direction:column;gap:2px;text-align:end}.print-brand-copy strong{font-size:17px}.print-brand-copy small{font-size:11px;color:#5f7086}.page{animation:none}.summary,.mobile-drawer{display:none!important}.review-grid{display:block}.panel,.status-card,.callout{box-shadow:none;border:1px solid #ccc}.check-row,.requirement-row{break-inside:avoid}table{font-size:11px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
+.quotation-form{display:grid;gap:14px;margin-top:18px;padding:18px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#f7fbff,#fff)}
+.quotation-form h3,.quotation-form p{margin:0}
+.quotation-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.quotation-form input{width:100%}
+.quote-save-note{padding:12px 14px;border-inline-start:3px solid #16ad85;border-radius:8px;background:#edf9f5;color:#335d54;font-size:13px}
+.quotation-form .button{justify-self:start;min-width:220px}
+@media(max-width:820px){.quotation-fields{grid-template-columns:1fr}.quotation-form .button{width:100%}}
+@media print{.quotation-form{display:none!important}}
+
 /* Refinement layer: compact shell, dense comparison, resilient content. */
 body{overflow-wrap:anywhere;-webkit-tap-highlight-color:rgba(37,86,217,.18)}
 .skip-link{position:fixed;z-index:100;inset-block-start:8px;inset-inline-start:12px;transform:translateY(-160%);padding:10px 14px;border-radius:10px;background:#fff;color:var(--navy);box-shadow:var(--shadow)}
