@@ -70,7 +70,10 @@ Typical deployment options:
 - object storage/CDN static hosting
 - an existing web server configured to serve the contents of `dist/`
 
-No automated live deployment is configured here, and this task did not deploy to production.
+An automated GitHub Pages workflow is included at `.github/workflows/deploy-pages.yml`.
+
+- pushes to `main` deploy the contents of `dist/`
+- `workflow_dispatch` can deploy the current branch manually from GitHub Actions
 
 ## Validation completed for this revision
 
