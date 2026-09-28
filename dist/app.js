@@ -188,7 +188,7 @@ function field(label, value, onChange, {type = 'number', min = 1, max = 100000, 
       input.append(option);
     }
     input.value = String(value);
-  } else {
+  } else if (state.advisorMode === 'advanced') {
     input = el('input');
     input.type = type;
     input.value = value ?? '';
@@ -423,7 +423,7 @@ function layout() {
   brand.append(logoLink, label);
 
   const actions = el('div', null, 'header-actions');
-  actions.append(tag(t('private'), 'dark'));
+  actions.append(btn(t('coverageDetails'), coverageModal, 'ghost coverage-link'));
   if (state.model_id) actions.append(tag(model().short, 'outline'));
   const language = btn(lang === 'fa' ? 'English' : 'فارسی', () => {
     const focus = focusSnapshot();
@@ -437,14 +437,8 @@ function layout() {
 
   const intro = el('section', null, 'hero');
   const introCopy = el('div', null, 'hero-copy');
-  introCopy.append(el('p', 'ENGINEERING CONFIGURATION STUDIO', 'eyebrow'), el('h1', t('title')), el('p', t('heroLead'), 'hero-lead'));
-  const introStatus = el('div', null, 'hero-status');
-  introStatus.append(
-    metricCard(number(data.models.length), t('platformsLabel'), t('sourceBackedMetric')),
-    metricCard(number(data.options.length), t('sourceOptionsLabel'), t('sourceLinkedMetric')),
-    metricCard(number(data.rules.length), t('rulesLabel'), t('coverageMetric')),
-  );
-  intro.append(introCopy, introStatus);
+  introCopy.append(el('h1', t('title')), el('p', t('heroLead'), 'hero-lead'));
+  intro.append(introCopy);
 
   const main = el('main');
   main.id = 'main-content';
@@ -464,9 +458,6 @@ function layout() {
     stepper.append(button);
   }
 
-  const coverageBand = el('section', null, 'coverage-band');
-  coverageBand.setAttribute('aria-label', t('coverageTitle'));
-  coverageBand.append(el('strong', t('coverageTitle')), el('span', t('coverageShort')), btn(t('coverageDetails'), coverageModal, 'linklike'));
   const content = el('section', null, 'page');
   const footer = el('footer', null, 'site-footer');
   footer.append(el('span', t('footer')), el('span', t('independent')));
@@ -485,7 +476,7 @@ function layout() {
   footerLinks.append(coverage, reset);
   footer.append(footerLinks);
 
-  shell.append(header, intro, stepper, coverageBand, main, footer);
+  shell.append(header, intro, stepper, main, footer);
   main.append(content);
   app.append(shell);
   renderToastNotice();
@@ -547,15 +538,32 @@ function applyProfile(profile) {
 }
 
 function estimateLabel(profile) {
-  if (state.workload === 'virtualization') return `${number(profile.values.vms)} ${t('vmCount')}`;
-  if (state.workload.startsWith('ai')) return `${number(profile.values.gpuGB)} GB GPU`;
-  return `${number(profile.values.storageTB)} TB`;
+  const target = {...state.requirements, ...profile.values};
+  if (state.workload === 'virtualization') target.ramGB = Math.ceil(target.vms * target.ramPerVM * 1.2);
+  const values = [`${number(target.cores)} ${t('coreUnit')}`, `${number(target.ramGB)} GB RAM`];
+  values.push(`${number(target.storageTB)} TB ${t('storageTargetShort')}`);
+  if (state.workload.startsWith('ai')) values.push(`${number(target.gpuGB)} GB ${t('gpuTargetShort')}`);
+  return values.join(' · ');
+}
+
+function targetPreview() {
+  const preview = el('div', null, 'target-preview');
+  const targets = [
+    [`${number(state.requirements.cores)} ${t('coreUnit')}`, t('coreTarget')],
+    [`${number(state.requirements.ramGB)} GB`, t('ramTarget')],
+    [`${number(state.requirements.storageTB)} TB`, t('storageTarget')],
+  ];
+  if (state.workload.startsWith('ai')) targets.push([`${number(state.requirements.gpuGB)} GB`, t('gpuTarget')]);
+  for (const [value, label] of targets) {
+    const item = el('div', null, 'target-preview-item');
+    item.append(el('strong', value), el('small', label));
+    preview.append(item);
+  }
+  return preview;
 }
 
 function workPage(root) {
   const lead = leadBlock(t('workloadTitle'), t('workloadSub'));
-  const saveHint = el('p', t('localSaveHint'), 'muted small');
-  lead.append(saveHint);
   root.append(lead);
 
   const grid = el('div', null, 'workload-grid');
@@ -565,9 +573,7 @@ function workPage(root) {
     card.setAttribute('aria-pressed', String(state.workload === key));
     const copy = el('div');
     copy.append(el('h3', key === 'storage' ? (lang === 'fa' ? 'ذخیره‌سازی و پشتیبان‌گیری' : 'Storage & backup') : t(key)), el('p', t(`${key}Desc`)));
-    const foot = el('div', null, 'workload-meta');
-    foot.append(tag(t('guidedMode'), 'outline'), tag(t('reviewRequired'), 'amber'));
-    card.append(icon(key), copy, foot);
+    card.append(icon(key), copy);
     card.onclick = () => withRender(() => {
       state.workload = key;
       state.workloadConfirmed = true;
@@ -579,10 +585,6 @@ function workPage(root) {
     grid.append(card);
   }
   root.append(grid);
-  const selectedWorkload = callout(t('selectedWorkload'), `${t(state.workload)} — ${t(`${state.workload}Desc`)}`, 'info');
-  selectedWorkload.setAttribute('aria-live', 'polite');
-  root.append(selectedWorkload);
-
   const advisor = el('section', null, 'advisor');
   const advisorLead = el('div', null, 'advisor-head');
   const heading = el('div');
@@ -601,16 +603,16 @@ function workPage(root) {
     for (const profile of guidedProfiles[state.workload]) {
       const card = el('button', null, 'profile-card');
       card.type = 'button';
-      card.append(el('strong', t(`profile_${profile.key}`)), el('span', estimateLabel(profile)), el('small', t('estimateHeuristic')));
+      card.append(el('strong', t(`profile_${profile.key}`)), el('span', estimateLabel(profile)));
       card.onclick = () => applyProfile(profile);
       profiles.append(card);
     }
     advisor.append(profiles);
   }
 
-  const fields = el('div', null, 'advisor-fields');
+  const fields = el(state.advisorMode === 'advanced' ? 'div' : 'div', null, 'advisor-fields');
   const req = state.requirements;
-  if (state.workload === 'virtualization') {
+  if (state.advisorMode === 'advanced' && state.workload === 'virtualization') {
     fields.append(
       field(t('vmCount'), req.vms, value => withRender(() => {
         req.vms = value;
@@ -636,11 +638,21 @@ function workPage(root) {
       }, {resetList: false}), {hint: t(state.workload.startsWith('ai') ? 'gpuTargetHint' : 'storageTargetHint')}),
     );
   }
-  advisor.append(fields, callout(t('assumptionsTitle'), t('assumptionsBody'), 'info'));
+  if (state.advisorMode === 'advanced') advisor.append(fields);
+  else advisor.append(targetPreview());
+  advisor.append(field(t('deploymentPreference'), state.deployment || 'any', value => withRender(() => {
+    state.deployment = value;
+  }, {resetList: false}), {
+    type: 'text',
+    options: [['any', t('deploymentAny')], ['rack_only', t('deploymentRack')]],
+  }));
+  const estimateDetails = el('details', null, 'estimate-details');
+  estimateDetails.append(el('summary', t('estimateNoteTitle')), el('p', t('estimateNoteBody'), 'small muted'));
+  advisor.append(estimateDetails);
   root.append(advisor);
 
   const bottom = el('div', null, 'bottom-action');
-  bottom.append(el('p', guidance(), 'advice-strip'), arrowButton(t('findServers'), () => go(2)));
+  bottom.append(arrowButton(t('findServers'), () => go(2)));
   root.append(bottom);
 }
 
@@ -709,56 +721,56 @@ function chassisGraphic(entry) {
 
 function serversPage(root) {
   const lead = leadBlock(t('recommendTitle'), t('recommendSub'));
-  lead.append(callout(t('workloadFit'), t('positioningNote')));
+  lead.append(el('p', t('recommendDisclaimer'), 'small muted'));
   root.append(lead);
 
-  const ranked = recommend(data, state.workload)
-    .map(entry => ({...entry, ...workloadLimits(entry, data, state.requirements, state.workload)}))
-    .sort((a, b) => Boolean(a.blockers.length) - Boolean(b.blockers.length));
-
-  const compare = el('div', null, 'compare-grid');
+  const ranked = recommend(data, state.workload, state.requirements, state.deployment || 'any');
+  const compare = el('div', null, 'comparison-list');
   for (const [index, entry] of ranked.entries()) {
     const current = state.model_id === entry.id;
     const narrative = serverNarrative(entry);
-    const card = el('article', null, `server-card ${index === 0 && !entry.blockers.length ? 'recommended' : ''} ${current ? 'selected' : ''}`.trim());
+    const card = el('article', null, `comparison-row ${entry.blockers.length ? 'target-limited' : ''} ${current ? 'selected' : ''}`.trim());
     const top = el('div', null, 'server-top');
-    top.append(tag(entry.blockers.length ? t('targetExceeds') : index === 0 ? t('recommended') : t('alternative'), entry.blockers.length ? 'red' : 'blue'));
+    top.append(tag(`${t('step2')} ${number(index + 1)}`, 'outline'));
+    top.append(tag(entry.blockers.length ? t('targetExceeds') : t('withinListedLimits'), entry.blockers.length ? 'amber' : 'outline'));
     if (current) top.append(tag(t('selectedServer'), 'good'));
     card.append(top);
     const title = el('div', null, 'server-title');
     title.append(bidi(entry.short.replace(' Gen11', ''), 'server-code'), bidi('HPE ProLiant · Gen11', 'muted small'));
-    card.append(title, chassisGraphic(entry));
-
-    const facts = el('div', null, 'server-facts');
-    for (const [value, label] of [
-      [entry.id === '16912' ? t('tower') : entry.id === '16910' ? '1U' : '2U', t('height')],
-      [number(2), t('socket')],
-      [number(entry.dimms), t('dimms')],
-      [t(entry.id === '16913' ? 'gpuFocus' : entry.id === '16910' ? 'density' : entry.id === '16912' ? 'office' : 'expansion'), t('focus')],
+    const capabilities = modelCapabilities(entry);
+    const detailsGrid = el('dl', null, 'server-capabilities');
+    for (const [label, value] of [
+      [t('height'), entry.form_factor === 'tower' ? t('tower') : `${entry.rack_u}U ${t('rack')}`],
+      [t('dimms'), `${number(entry.dimms)} · ${number(capabilities.maxMemoryGB)} GB ${t('listedMemoryMax')}`],
+      [t('storageTarget'), `${number(state.requirements.storageTB)} TB · ${number(capabilities.largestDriveTB)} TB ${t('largestListedDrive')}`],
+      [t('gpuFocus'), capabilities.gpu ? `${number(capabilities.gpuMaxGB)} GB ${t('gpuPerCard')} · ${number(capabilities.riserCount)} ${t('riserOptions')}` : t('noGpuOptionListed')],
+      [t('pcieSuitability'), `${number(capabilities.riserCount)} ${t('riserOptions')} · ${t(entry.coverage?.pcie === 'partial' ? 'coveragePartial' : 'coverageMissing')}`],
     ]) {
-      const fact = el('div', null, 'fact');
-      fact.append(el('strong', value), el('small', label));
-      facts.append(fact);
+      const item = el('div', null, 'server-capability');
+      item.append(el('dt', label), el('dd', value));
+      detailsGrid.append(item);
     }
-    card.append(facts);
-
-    const fit = el('div', null, 'server-fit');
-    fit.append(el('strong', t('whyRelevant')), renderList(narrative.reasons.map(key => t(`why_${key}`))));
-    fit.append(el('strong', t('tradeoffs')), renderList(narrative.tradeoffs.map(key => t(`tradeoff_${key}`))));
-    if (entry.blockers.length) fit.append(callout(t('targetExceeds'), t('targetExceedsNote'), 'warning'));
-    card.append(fit);
+    const reasons = el('div', null, 'server-reasons');
+    reasons.append(el('strong', t('whyRelevant')), el('p', `${t('workloadTargets')}: ${workloadTargetSummary()}`, 'small'));
+    reasons.append(renderList(narrative.reasons.slice(0, 1).map(key => t(`why_${key}`))));
+    if (entry.blockers.length) {
+      reasons.append(el('p', `${t('belowKnownLimits')}: ${entry.blockers.map(key => t(`target_${key}`)).join(' · ')}`, 'target-warning'));
+    }
+    const more = el('details', null, 'server-details');
+    more.append(el('summary', t('tradeoffs')));
+    more.append(renderList(narrative.tradeoffs.map(key => t(`tradeoff_${key}`))), evidence(entry.evidence));
+    card.append(title, detailsGrid, reasons, more);
 
     const actions = el('div', null, 'server-actions');
     const choose = btn(current ? t('selectedServer') : t('selectServer'), () => chooseModel(entry), current ? 'dark' : 'primary');
-    choose.disabled = Boolean(entry.blockers.length);
     const source = btn(t('details'), () => {
       modalFactory = () => {
         const box = el('div');
         const modelName = el('h3', entry.name);
         modelName.dir = 'ltr';
         modelName.translate = false;
-        box.append(modelName, el('p', t('serverWarning')));
-        box.append(callout(t('workloadFit'), t('positioningNote')), evidence(entry.evidence));
+        box.append(modelName, el('p', t('serverWarning')), callout(t('workloadFit'), t('recommendDisclaimer')));
+        box.append(evidence(entry.evidence));
         return box;
       };
       renderModal(entry.short);
@@ -769,6 +781,30 @@ function serversPage(root) {
   }
 
   root.append(compare, btn(t('back'), () => go(1), 'ghost'));
+}
+
+function modelCapabilities(entry) {
+  const options = data.options.filter(option => option.model_id === entry.id);
+  const maxDimmGB = Math.max(0, ...options.filter(option => option.category === 'memory').map(option => option.attributes.capacity_gb || 0));
+  const largestDriveGB = Math.max(0, ...options.filter(option => option.category === 'storage').map(option => option.attributes.capacity_gb || 0));
+  const gpuOptions = options.filter(option => option.category === 'gpu');
+  return {
+    maxMemoryGB: maxDimmGB * entry.dimms,
+    largestDriveTB: largestDriveGB / 1000,
+    gpu: gpuOptions.length > 0,
+    gpuMaxGB: Math.max(0, ...gpuOptions.map(option => option.attributes.vram_gb || 0)),
+    riserCount: options.filter(option => option.category === 'riser').length,
+  };
+}
+
+function workloadTargetSummary() {
+  const values = [
+    `${number(state.requirements.cores)} ${t('coreUnit')}`,
+    `${number(state.requirements.ramGB)} GB RAM`,
+    `${number(state.requirements.storageTB)} TB ${t('storageTargetShort')}`,
+  ];
+  if (state.workload.startsWith('ai')) values.push(`${number(state.requirements.gpuGB)} GB ${t('gpuTargetShort')}`);
+  return values.join(' · ');
 }
 
 function renderList(items) {
@@ -849,7 +885,7 @@ function issueState() {
   const workloadGaps = [];
   if (chosen('memory') && values.memory < state.requirements.ramGB) workloadGaps.push(t('ramBelow'));
   if (chosen('cpu') && values.cores < state.requirements.cores) workloadGaps.push(t('coresBelow'));
-  if (!state.workload.startsWith('ai') && chosen('storage') && values.usable != null && values.usable / 1000 < state.requirements.storageTB) workloadGaps.push(t('storageBelow'));
+  if (chosen('storage') && values.usable != null && values.usable / 1000 < state.requirements.storageTB) workloadGaps.push(t('storageBelow'));
   if (state.workload.startsWith('ai') && chosen('gpu') && values.gpuMemory < state.requirements.gpuGB) workloadGaps.push(t('gpuMemoryTooLow'));
   return {
     values,
@@ -876,11 +912,19 @@ function categoryStatus(cat, issues) {
   const selected = state.selected[cat]?.length;
   const all = data.options.filter(option => option.model_id === state.model_id && option.category === cat);
   const hiddenCurrent = all.some(option => state.selected[cat]?.includes(option.sku) && optionCheck(state, data, option).hidden);
-  const hasIssue = issues.direct.some(item => item.category === cat) || issues.findings.some(item => item.domain === cat);
+  const needsCategory = requiredOptions(issues).some(option => option.category === cat);
+  const hasIssue = issues.direct.some(item => item.category === cat)
+    || issues.unknown.some(item => item.domain === cat)
+    || issues.conflicts.some(item => item.domain === cat && !issues.required.some(need => need.rule.id === item.id));
   if (hiddenCurrent || hasIssue) return 'warning';
+  if (needsCategory) return 'requiredForBuild';
   if (selected) return 'done';
   if (BASE_REQUIRED.includes(cat) || (cat === 'gpu' && state.model_id === '16913')) return 'required';
   return 'idle';
+}
+
+function requiredOptions(issues) {
+  return issues.required.flatMap(need => need.any.map(sku => data.options.find(option => option.model_id === state.model_id && option.sku === sku)).filter(Boolean));
 }
 
 function componentPage(root) {
@@ -889,15 +933,6 @@ function componentPage(root) {
   root.append(lead);
 
   const issues = issueState();
-  const status = el('section', null, 'status-grid');
-  status.append(
-    statusCard(t('selectedCategories'), number(Object.keys(state.selected).filter(key => state.selected[key]?.length).length), t('selectedCategoriesHint'), 'good'),
-    statusCard(t('missingSelections'), number(issues.missing.length), t('missingSelectionsHint'), issues.missing.length ? 'warning' : 'good'),
-    statusCard(t('knownConflictsLabel'), number(issues.direct.length + issues.conflicts.length), t('knownConflictsHint'), issues.direct.length + issues.conflicts.length ? 'danger' : 'good'),
-    statusCard(t('unknownChecksLabel'), number(issues.unknown.length), t('unknownChecksHint'), issues.unknown.length ? 'warning' : 'good'),
-  );
-  root.append(status);
-
   const meta = el('section', null, 'meta-bar');
   meta.append(
     field(t('chassis'), state.chassis, value => withRender(() => { state.chassis = value; }, {resetList: false}), {type: 'text', options: model().chassis.map(item => [item, item]), hint: t('chassisHint')}),
@@ -913,7 +948,7 @@ function componentPage(root) {
     const statusKey = categoryStatus(cat, issues);
     const button = el('button', null, `category-link ${category === cat ? 'current' : ''}`.trim());
     button.type = 'button';
-    button.append(icon(cat), el('span', t(cat)), tag(t(`categoryState_${statusKey}`), statusKey === 'warning' ? 'amber' : statusKey === 'done' ? 'good' : statusKey === 'required' ? 'outline' : ''));
+    button.append(icon(cat), el('span', t(cat)), tag(t(`categoryState_${statusKey}`), statusKey === 'warning' ? 'amber' : statusKey === 'done' ? 'good' : ['required', 'requiredForBuild'].includes(statusKey) ? 'outline' : ''));
     if (state.selected[cat]?.length) button.append(el('span', number(state.selected[cat].length), 'count'));
     button.onclick = () => {
       withRender(() => {
@@ -991,21 +1026,29 @@ function renderParts(root, issues) {
   root.append(top);
 
   const all = data.options.filter(option => option.model_id === state.model_id && option.category === category);
-  const checked = all.map(option => ({option, check: optionCheck(state, data, option)}));
+  const requiredSkus = new Set(requiredOptions(issues).map(option => option.sku));
+  const checked = all.map(option => {
+    const check = optionCheck(state, data, option);
+    return {option, check, target: optionTarget(option), required: requiredSkus.has(option.sku)};
+  });
   const visible = checked.filter(({option, check}) => !check.hidden && (!query || `${option.description} ${option.sku}`.toLowerCase().includes(query.toLowerCase())));
+  visible.sort((a, b) => Number(b.required) - Number(a.required)
+    || Number(b.target.meets) - Number(a.target.meets)
+    || a.target.distance - b.target.distance);
 
   root.append(el('p', `${number(visible.length)} ${t('visibleOptions')} · ${number(checked.filter(item => item.check.hidden).length)} ${t('hiddenCount')}`, 'small muted'));
 
   const currentBad = checked.filter(({option, check}) => check.hidden && state.selected[category]?.includes(option.sku));
   if (currentBad.length) {
     const note = callout(t('incompatibleSelected'), currentBad.map(item => `${item.option.sku} · ${item.check.reasons.map(reason => t(reason)).join(' · ') || t('knownConflict')}`).join('\n'), 'warning');
+    note.prepend(tag(t('incompatible'), 'red'));
     note.append(btn(t('remove'), () => withRender(() => { delete state.selected[category]; }, {announce: t('removed')}), 'compact'));
     root.append(note);
   }
 
   const list = el('div', null, 'part-list');
   const start = page * PAGE_SIZE;
-  for (const {option, check} of visible.slice(start, start + PAGE_SIZE)) {
+  for (const {option, check, target, required} of visible.slice(start, start + PAGE_SIZE)) {
     const active = state.selected[category]?.includes(option.sku);
     const card = el('article', null, `part-card ${active ? 'selected' : ''}`.trim());
     const content = el('div', null, 'part-content');
@@ -1018,11 +1061,18 @@ function renderParts(root, issues) {
     if (option.attributes.rank) specs.append(tag(`${option.attributes.rank}R ×${option.attributes.width}`));
     if (option.attributes.mount) specs.append(tag(option.attributes.mount));
     if (option.attributes.protocol) specs.append(tag(option.attributes.protocol));
-    specs.append(tag(t('listed'), 'outline'), tag(t('reviewRequired'), 'amber'));
+    const status = partStatus(option, check, active, issues, target);
+    specs.append(tag(t(status), status === 'incompatible' ? 'red' : status === 'belowTarget' || status === 'requiresReview' ? 'amber' : status === 'selectedKnownChecks' ? 'good' : 'outline'));
+    if (required) specs.append(tag(t('requiredForBuild'), 'amber'));
     content.append(specs);
 
     if (check.requirements.length) content.append(callout(t('needsKit'), t('requirementsHint'), 'warning'));
     if (check.conflicts?.length) content.append(callout(t('knownConflict'), check.conflicts.map(ruleText).join(' · '), 'warning'));
+    if (check.unknowns?.length) {
+      const review = el('details', null, 'candidate-review');
+      review.append(el('summary', t('reviewRequired')), renderList(check.unknowns.map(ruleText)));
+      content.append(review);
+    }
 
     const actions = el('div', null, 'part-actions');
     if (active && !['cpu', 'memory', 'storage', 'gpu', 'psu'].includes(option.category)) {
@@ -1076,6 +1126,41 @@ function renderParts(root, issues) {
   root.append(action);
 }
 
+function optionTarget(option) {
+  const category = option.category;
+  const target = category === 'cpu' ? state.requirements.cores
+    : category === 'memory' ? state.requirements.ramGB
+      : category === 'storage' ? state.requirements.storageTB
+        : category === 'gpu' ? state.requirements.gpuGB : null;
+  if (target == null) return {applicable: false, meets: true, distance: 0};
+  const trial = structuredClone(state);
+  trial.selected[category] = [option.sku];
+  const values = stats(trial, data);
+  const achieved = category === 'cpu' ? values.cores
+    : category === 'memory' ? values.memory
+      : category === 'storage' ? values.usable == null ? values.raw / 1000 : values.usable / 1000
+        : values.gpuMemory;
+  return {
+    applicable: true,
+    meets: achieved >= target,
+    distance: achieved >= target ? achieved - target : target - achieved + target,
+  };
+}
+
+function partStatus(option, check, active, issues, target) {
+  if (check.hidden) return 'incompatible';
+  if (active) {
+    if (issues.direct.some(item => item.category === option.category)) return 'incompatible';
+    const categoryNeeds = issues.required.some(item => item.rule.domain === option.category);
+    if (categoryNeeds || issues.unknown.some(item => item.domain === option.category) || check.requirements.length || check.unknowns?.length) return 'requiresReview';
+    if (issues.conflicts.some(item => item.domain === option.category)) return 'incompatible';
+    return 'selectedKnownChecks';
+  }
+  if (check.requirements.length || check.conflicts?.length || check.unknowns?.length) return 'requiresReview';
+  if (target.applicable && !target.meets) return 'belowTarget';
+  return 'noKnownConflict';
+}
+
 function selectPart(option) {
   const check = optionCheck(state, data, option);
   if (check.hidden) {
@@ -1096,9 +1181,14 @@ function selectPart(option) {
 function issuePanel(issues) {
   const panel = el('section', null, 'panel');
   panel.append(el('h3', t('outstandingTitle')));
+  const requiredIds = new Set(issues.required.map(item => item.rule.id));
+  const conflicts = issues.conflicts.filter(item => !requiredIds.has(item.id));
+  const missingRequirements = issues.required.map(item => `${ruleText(item.rule)} · ${item.any.join(' / ')}`);
+  const requiredActions = issues.required.flatMap(item => item.any.map(sku => data.options.find(option => option.model_id === state.model_id && option.sku === sku)?.category).filter(Boolean));
   const groups = [
     [issues.missing.length, t('missingSelections'), issues.missing, issues.missingActions],
-    [issues.direct.length + issues.conflicts.length, t('knownConflictsLabel'), [...issues.direct.map(item => item.message), ...issues.conflicts.map(item => item.message)], [...issues.direct.map(item => item.category), ...issues.conflicts.map(item => item.domain)]],
+    [missingRequirements.length, t('requiredAccessories'), missingRequirements, requiredActions],
+    [issues.direct.length + conflicts.length, t('knownConflictsLabel'), [...issues.direct.map(item => item.message), ...conflicts.map(item => item.message)], [...issues.direct.map(item => item.category), ...conflicts.map(item => item.domain)]],
     [issues.unknown.length, t('unknownChecksLabel'), issues.unknown.map(item => item.message), issues.unknown.map(item => item.domain)],
     [issues.workloadGaps.length, t('advisoriesLabel'), issues.workloadGaps, []],
   ];
@@ -1164,8 +1254,11 @@ function summaryPanel(issues, {mobile}) {
   const head = el('div', null, 'summary-head');
   head.append(el('p', t('buildSummary'), 'small'), bidi(model().short, 'server-code'), el('small', `${state.chassis} · ${t(state.workload)}`));
   const status = el('div', null, 'summary-status');
-  status.append(tag(issues.missing.length ? t('actionNeeded') : t('partialCheck'), issues.missing.length ? 'amber' : 'outline'));
-  if (issues.direct.length + issues.conflicts.length) status.append(tag(t('conflict'), 'red'));
+  const requiredIds = new Set(issues.required.map(item => item.rule.id));
+  const unresolvedConflicts = issues.conflicts.filter(item => !requiredIds.has(item.id));
+  const needsAction = issues.missing.length + issues.direct.length + unresolvedConflicts.length + issues.required.length + issues.unknown.length + issues.workloadGaps.length > 0;
+  status.append(tag(needsAction ? t('actionNeeded') : t('partialCheck'), needsAction ? 'amber' : 'outline'));
+  if (issues.direct.length + unresolvedConflicts.length) status.append(tag(t('conflict'), 'red'));
   if (issues.unknown.length) status.append(tag(t('unknown'), 'amber'));
   head.append(status);
 
@@ -1194,13 +1287,23 @@ function summaryPanel(issues, {mobile}) {
     row.append(el('span', t(cat)), value);
     items.append(row);
   }
-  const target = el('div', null, 'progress-block');
-  target.append(el('div', `${t('target')}: ${number(state.requirements.ramGB)} GB RAM`, 'target-note'));
-  const meter = el('div', null, 'meter');
-  const fill = el('i');
-  fill.style.width = `${Math.min(100, Math.max(0, (values.memory / Math.max(1, state.requirements.ramGB)) * 100))}%`;
-  meter.append(fill);
-  target.append(meter);
+  const targets = [
+    [t('physicalCores'), values.cores, state.requirements.cores, chosen('cpu')],
+    [t('installedRAM'), values.memory, state.requirements.ramGB, chosen('memory'), 'GB'],
+    [t('usableStorage'), values.usable == null ? null : values.usable / 1000, state.requirements.storageTB, chosen('storage'), 'TB'],
+  ];
+  if (state.workload.startsWith('ai') || state.model_id === '16913') {
+    targets.push([t('gpuMemory'), values.gpuMemory, state.requirements.gpuGB, chosen('gpu'), 'GB']);
+  }
+  const target = el('div', null, 'summary-targets');
+  for (const [label, actual, goal, selected, unit = ''] of targets) {
+    const row = el('div', null, 'summary-target-row');
+    row.append(
+      el('span', label),
+      el('strong', selected && actual != null ? `${number(actual)} / ${number(goal)} ${unit}`.trim() : `${t('notSelected')} / ${number(goal)} ${unit}`.trim()),
+    );
+    target.append(row);
+  }
   items.append(target);
 
   const footer = el('div', null, 'summary-footer');
@@ -1214,8 +1317,10 @@ function summaryPanel(issues, {mobile}) {
 
 function reviewPage(root) {
   const issues = issueState();
-  const openCount = issues.missing.length + issues.direct.length + issues.conflicts.length + issues.unknown.length + issues.workloadGaps.length;
-  const reportStatus = callout(openCount ? t('actionNeeded') : t('partialCheck'), openCount ? `${number(openCount)} ${t('outstandingSummary')}` : t('noOpenButLimited'), openCount ? 'warning' : 'info');
+  const requiredIds = new Set(issues.required.map(item => item.rule.id));
+  const openConflicts = issues.conflicts.filter(item => !requiredIds.has(item.id));
+  const openCount = issues.missing.length + issues.direct.length + openConflicts.length + issues.required.length + issues.unknown.length + issues.workloadGaps.length + 1;
+  const reportStatus = callout(openCount ? t('actionNeeded') : t('noOpenButLimited'), openCount ? `${number(openCount)} ${t('outstandingSummary')}` : t('withinLimitsNote'), openCount ? 'warning' : 'info');
   reportStatus.classList.add('report-status');
   root.append(reportStatus);
   const printBrand = el('div', null, 'print-brand');
@@ -1230,14 +1335,14 @@ function reviewPage(root) {
   root.append(printBrand);
   root.append(leadBlock(t('reviewTitle'), t('reviewSub')));
 
-  const grid = el('div', null, 'review-grid');
-  const left = el('div', null, 'review-main');
-  grid.append(left, summaryPanel(issues, {mobile: false}));
+  root.append(decisionSummary(issues));
+  const unknownChassis = callout(t('unknownChassisSku'), t('chassisSkuQuoteNotice'), 'warning');
+  unknownChassis.classList.add('chassis-sku-warning');
+  root.append(unknownChassis);
 
   const readiness = el('section', null, 'panel');
-  readiness.append(el('h2', t('readinessTitle')));
-  readiness.append(issuePanel(issues));
-  left.append(readiness);
+  readiness.append(el('h2', t('readinessTitle')), compactOpenItems(issues));
+  root.append(readiness);
 
   const bom = el('section', null, 'panel');
   bom.append(el('h2', t('bom')), el('p', `${model().name} · ${state.chassis}`, 'muted small'));
@@ -1265,55 +1370,103 @@ function reviewPage(root) {
   const scroll = el('div', null, 'table-scroll');
   scroll.append(table);
   bom.append(scroll, el('p', t('noPrice'), 'small muted'));
-  left.append(bom);
+  root.append(bom);
 
-  const checks = el('section', null, 'panel');
-  checks.append(el('h2', t('structuredChecks')));
+  const checks = el('details', null, 'panel report-details');
+  checks.append(el('summary', t('structuredChecks')));
   if (!issues.direct.length && !issues.findings.length) checks.append(checkRow(t('noneOpen'), t('noStructuredFindings'), 'blue'));
   for (const item of issues.direct) checks.append(checkRow(t('conflict'), item.message, 'red'));
-  for (const item of issues.findings) {
+  for (const item of issues.findings.filter(finding => !requiredIds.has(finding.id))) {
     const row = checkRow(t(item.status === 'conflict' ? 'conflict' : 'unknown'), item.message, item.status === 'conflict' ? 'red' : 'amber');
     row.append(evidence(item.evidence));
     checks.append(row);
   }
-  checks.append(checkRow(t('reviewRequired'), t('coverageNotice'), 'amber'));
-  left.append(checks, requirementsPanel(issues));
+  checks.append(el('p', t('coverageNotice'), 'small muted'));
+  root.append(checks, requirementsPanel(issues));
 
-  const fit = el('section', null, 'panel');
-  fit.append(el('h2', t('workloadFit')));
-  const fitRows = [
-    [issues.values.memory, state.requirements.ramGB, t('installedRAM'), 'GB', 'ramBelow', Boolean(chosen('memory'))],
-    [issues.values.cores, state.requirements.cores, t('physicalCores'), '', 'coresBelow', Boolean(chosen('cpu'))],
-  ];
-  if (!state.workload.startsWith('ai')) fitRows.push([issues.values.usable == null ? null : issues.values.usable / 1000, state.requirements.storageTB, t('usableStorage'), 'TB', 'storageBelow', Boolean(chosen('storage'))]);
-  else fitRows.push([issues.values.gpuMemory, state.requirements.gpuGB, t('gpuMemory'), 'GB', 'gpuMemoryTooLow', Boolean(chosen('gpu'))]);
-  for (const [actual, target, label, unit, key, selected] of fitRows) {
-    const passed = selected && actual != null && actual >= target;
-    const status = !selected ? t('notSelected') : actual == null ? t('unknownValue') : passed ? '✓' : t('unknown');
-    const message = !selected ? `${label}: ${t('notSelected')}` : actual == null ? `${label}: ${t('unknownValue')}` : passed ? `${label}: ${number(actual)} ${unit} / ${number(target)} ${unit}`.trim() : t(key);
-    fit.append(checkRow(status, message, passed ? 'blue' : 'amber'));
-  }
-  fit.append(callout(t('profileGuidance'), guidance()));
-  left.append(fit);
-
-  const notes = el('section', null, 'panel');
-  notes.append(el('h2', t('technicalNotes')));
+  const notes = el('details', null, 'panel report-details');
+  notes.append(el('summary', t('technicalNotes')));
   [t('raidDisclaimer'), t('powerDisclaimer'), t('memorySpeedNote'), t('reviewSummary')].forEach(text => notes.append(el('p', text, 'small muted')));
-  left.append(notes);
+  notes.append(el('p', guidance(), 'small muted'));
+  root.append(notes);
 
   const output = el('section', null, 'panel');
   output.append(el('h2', t('output')));
   const buttons = el('div', null, 'row wrap');
   buttons.append(btn(t('downloadBOM'), exportCSV, 'secondary'), btn(t('downloadJSON'), exportJSON, 'secondary'), btn(t('print'), () => window.print(), 'secondary'));
-  output.append(buttons, el('p', t('localSaveHint'), 'small muted'), quotationForm());
-  left.append(output);
+  output.append(buttons, quotationForm());
+  root.append(output);
+}
 
-  root.append(grid);
+function decisionSummary(issues) {
+  const panel = el('section', null, 'panel decision-summary');
+  panel.append(
+    el('h2', t('decisionSummary')),
+    el('p', `${t('chassisSelection')}: ${model().short} · ${state.chassis}`, 'small muted chassis-selection'),
+  );
+  const rows = [
+    [t('physicalCores'), issues.values.cores, state.requirements.cores, Boolean(chosen('cpu')), ''],
+    [t('installedRAM'), issues.values.memory, state.requirements.ramGB, Boolean(chosen('memory')), 'GB'],
+    [t('usableStorage'), issues.values.usable == null ? null : issues.values.usable / 1000, state.requirements.storageTB, Boolean(chosen('storage')), 'TB'],
+  ];
+  if (state.workload.startsWith('ai') || state.model_id === '16913') {
+    rows.push([t('gpuMemory'), issues.values.gpuMemory, state.requirements.gpuGB, Boolean(chosen('gpu')), 'GB']);
+  }
+  const table = el('table');
+  const head = document.createElement('thead');
+  const header = el('tr');
+  [t('category'), t('target'), t('achieved'), t('requirementsCheck')].forEach(label => {
+    const cell = el('th', label);
+    cell.scope = 'col';
+    header.append(cell);
+  });
+  head.append(header);
+  const body = document.createElement('tbody');
+  for (const [label, actual, target, selected, unit] of rows) {
+    const row = el('tr');
+    const within = selected && actual != null && actual >= target;
+    const status = !selected ? t('notSelected') : actual == null ? t('unknownValue') : within ? t('meetsTarget') : t('belowTarget');
+    row.append(
+      el('th', label),
+      el('td', `${number(target)} ${unit}`.trim()),
+      el('td', selected && actual != null ? `${number(actual)} ${unit}`.trim() : t('notSelected')),
+      el('td', status),
+    );
+    body.append(row);
+  }
+  table.append(head, body);
+  const scroll = el('div', null, 'table-scroll');
+  scroll.append(table);
+  panel.append(scroll);
+  return panel;
+}
+
+function compactOpenItems(issues) {
+  const requiredIds = new Set(issues.required.map(item => item.rule.id));
+  const groups = [
+    [t('missingSelections'), issues.missing],
+    [t('requiredAccessories'), issues.required.map(item => `${ruleText(item.rule)} · ${item.any.join(' / ')}`)],
+    [t('knownConflictsLabel'), [...issues.direct.map(item => item.message), ...issues.conflicts.filter(item => !requiredIds.has(item.id)).map(item => item.message)]],
+    [t('unknownChecksLabel'), issues.unknown.map(item => item.message)],
+    [t('advisoriesLabel'), issues.workloadGaps],
+  ].filter(([, items]) => items.length);
+  const list = el('ul', null, 'open-items');
+  if (!groups.length) {
+    list.append(el('li', t('noStructuredFindings')));
+    return list;
+  }
+  for (const [label, items] of groups) {
+    const item = el('li');
+    item.append(el('strong', `${label}: `), document.createTextNode(items.join(' · ')));
+    list.append(item);
+  }
+  return list;
 }
 
 function quotationForm() {
   const form = el('form', null, 'quotation-form');
   form.append(el('h3', t('quoteTitle')), el('p', t('quoteIntro'), 'small muted'));
+  form.append(el('p', t('quoteDraftReview'), 'quote-save-note'));
 
   const mobileLabel = el('label', null, 'field');
   mobileLabel.append(el('span', t('quoteMobile'), 'field-label'));
