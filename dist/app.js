@@ -1048,6 +1048,16 @@ function summaryPanel(issues, {mobile}) {
 
 function reviewPage(root) {
   const issues = issueState();
+  const printBrand = el('div', null, 'print-brand');
+  printBrand.append(
+    el('span', t('brandName'), 'print-brand-mark'),
+    (() => {
+      const copy = el('span', null, 'print-brand-copy');
+      copy.append(el('strong', t('companyName')), el('small', t('printSubtitle')));
+      return copy;
+    })(),
+  );
+  root.append(printBrand);
   root.append(leadBlock(t('reviewTitle'), t('reviewSub')));
 
   const metrics = el('div', null, 'status-grid');
@@ -1124,8 +1134,8 @@ function reviewPage(root) {
   const output = el('section', null, 'panel');
   output.append(el('h2', t('output')));
   const buttons = el('div', null, 'row wrap');
-  buttons.append(btn(t('downloadBOM'), exportCSV, 'primary'), btn(t('downloadJSON'), exportJSON, 'secondary'), btn(t('print'), () => window.print(), 'secondary'));
-  output.append(buttons);
+  buttons.append(btn(t('downloadBOM'), exportCSV, 'primary'), btn(t('downloadJSON'), exportJSON, 'secondary'), btn(t('print'), () => window.print(), 'secondary'), btn(t('whatsapp'), shareWhatsApp, 'secondary'));
+  output.append(buttons, el('p', t('whatsappNote'), 'small muted'));
   left.append(output);
 
   root.append(grid);
@@ -1169,6 +1179,19 @@ function exportPayload() {
 
 function exportJSON() {
   download(`ARIA-${model().short.replaceAll(' ', '-')}.json`, JSON.stringify(exportPayload(), null, 2), 'application/json');
+}
+
+function shareWhatsApp() {
+  const issues = issueState();
+  const unresolved = issues.missing.length + issues.direct.length + issues.findings.length;
+  const text = [
+    `${t('brandName')} · ${t('companyName')}`,
+    `${t('step2')}: ${model().short}`,
+    `${t('workloadTitle')}: ${t(state.workload)}`,
+    `${t('output')}: ${unresolved ? `${unresolved} ${t('unknown')}` : t('passed')}`,
+    'https://staging.aria-man.com/',
+  ].join('\n');
+  window.open(`https://wa.me/989123624305?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
 }
 
 function exportCSV() {
