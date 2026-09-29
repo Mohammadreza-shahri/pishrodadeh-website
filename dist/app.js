@@ -129,6 +129,13 @@ const guidedProfiles = {
   ],
 };
 
+const officialProductPages = {
+  '16910': 'https://www.hpe.com/us/en/product-catalog/servers/proliant-servers/pip.hpe-proliant-dl360-gen11.1014325489.html',
+  '16911': 'https://www.hpe.com/us/en/servers/proliant-dl380-gen11.html',
+  '16912': 'https://www.hpe.com/us/en/servers/proliant-ml350-gen11.html',
+  '16913': 'https://www.hpe.com/us/en/servers/proliant-dl380a-gen11.html',
+};
+
 function icon(key) {
   const wrap = el('span', null, 'icon');
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -401,6 +408,56 @@ function coverageModal() {
   renderModal(t('coverageTitle'));
 }
 
+function heroServerGraphic() {
+  const figure = el('figure', null, 'hero-server-visual');
+  figure.setAttribute('aria-label', t('illustrativeChassis'));
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 520 250');
+  svg.setAttribute('role', 'img');
+  const title = document.createElementNS(svg.namespaceURI, 'title');
+  title.textContent = t('illustrativeChassis');
+  svg.append(title);
+  const glow = document.createElementNS(svg.namespaceURI, 'ellipse');
+  glow.setAttribute('cx', '260');
+  glow.setAttribute('cy', '210');
+  glow.setAttribute('rx', '190');
+  glow.setAttribute('ry', '18');
+  glow.setAttribute('class', 'hero-glow');
+  svg.append(glow);
+  const server = document.createElementNS(svg.namespaceURI, 'rect');
+  server.setAttribute('x', '58');
+  server.setAttribute('y', '66');
+  server.setAttribute('width', '404');
+  server.setAttribute('height', '112');
+  server.setAttribute('rx', '12');
+  server.setAttribute('class', 'hero-server-body');
+  svg.append(server);
+  for (let row = 0; row < 2; row += 1) {
+    for (let bay = 0; bay < 8; bay += 1) {
+      const drive = document.createElementNS(svg.namespaceURI, 'rect');
+      drive.setAttribute('x', String(82 + bay * 38));
+      drive.setAttribute('y', String(84 + row * 42));
+      drive.setAttribute('width', '27');
+      drive.setAttribute('height', '27');
+      drive.setAttribute('rx', '4');
+      drive.setAttribute('class', 'hero-server-drive');
+      svg.append(drive);
+    }
+  }
+  const indicator = document.createElementNS(svg.namespaceURI, 'circle');
+  indicator.setAttribute('cx', '436');
+  indicator.setAttribute('cy', '123');
+  indicator.setAttribute('r', '6');
+  indicator.setAttribute('class', 'hero-server-indicator');
+  svg.append(indicator);
+  const line = document.createElementNS(svg.namespaceURI, 'path');
+  line.setAttribute('d', 'M96 44h82l24-25h92l24 25h106');
+  line.setAttribute('class', 'hero-tech-line');
+  svg.append(line);
+  figure.append(svg, el('figcaption', t('heroGraphicCaption')));
+  return figure;
+}
+
 function layout() {
   app.replaceChildren();
   document.documentElement.lang = lang;
@@ -444,7 +501,7 @@ function layout() {
     metricCard(number(data.options.length), t('sourceOptionsLabel'), t('sourceLinkedMetric')),
     metricCard(number(data.rules.length), t('rulesLabel'), t('coverageMetric')),
   );
-  intro.append(introCopy, introStatus);
+  intro.append(introCopy, heroServerGraphic(), introStatus);
 
   const main = el('main');
   main.id = 'main-content';
@@ -582,6 +639,7 @@ function workPage(root) {
   const selectedWorkload = callout(t('selectedWorkload'), `${t(state.workload)} — ${t(`${state.workload}Desc`)}`, 'info');
   selectedWorkload.setAttribute('aria-live', 'polite');
   root.append(selectedWorkload);
+  root.append(callout(t('quickGuideTitle'), t('quickGuideBody'), 'tip'));
 
   const advisor = el('section', null, 'advisor');
   const advisorLead = el('div', null, 'advisor-head');
@@ -704,6 +762,13 @@ function chassisGraphic(entry) {
   vent.setAttribute('class', 'chassis-vent');
   svg.append(vent);
   figure.append(svg, el('figcaption', t('illustrativeOnly')));
+  const source = el('a', t('officialPhoto'));
+  source.className = 'official-photo-link';
+  source.href = officialProductPages[entry.id] || 'https://www.hpe.com/us/en/servers.html';
+  source.target = '_blank';
+  source.rel = 'noopener noreferrer';
+  source.title = t('officialPhotoNote');
+  figure.append(source);
   return figure;
 }
 
@@ -1009,6 +1074,7 @@ function renderParts(root, issues) {
     const active = state.selected[category]?.includes(option.sku);
     const card = el('article', null, `part-card ${active ? 'selected' : ''}`.trim());
     const content = el('div', null, 'part-content');
+    content.append(icon(option.category));
     const title = el('div', partTitle(option), 'part-title');
     title.dir = 'ltr';
     title.translate = false;
@@ -1039,7 +1105,7 @@ function renderParts(root, issues) {
 
   if (!visible.length) {
     const empty = el('div', null, 'empty');
-    empty.append(el('h3', t('noOptions')), el('p', t('noOptionsBody')));
+    empty.append(icon(category), el('h3', t('noOptions')), el('p', t('noOptionsBody')));
     if (category === 'backplane') empty.append(el('p', t('baseCage')));
     list.append(empty);
   }
