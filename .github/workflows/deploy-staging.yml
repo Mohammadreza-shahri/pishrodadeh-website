@@ -56,8 +56,14 @@ jobs:
           SSH_KNOWN_HOSTS: ${{ secrets.STAGING_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
-          test -n "$SSH_PRIVATE_KEY"
-          test -n "$SSH_KNOWN_HOSTS"
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "::error::Missing staging environment secret: STAGING_SSH_KEY"
+            exit 1
+          fi
+          if [ -z "$SSH_KNOWN_HOSTS" ]; then
+            echo "::error::Missing staging environment secret: STAGING_KNOWN_HOSTS"
+            exit 1
+          fi
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/staging_deploy"
           chmod 600 "$HOME/.ssh/staging_deploy"
@@ -73,9 +79,18 @@ jobs:
           STAGING_PATH: ${{ secrets.STAGING_PATH }}
         run: |
           set -euo pipefail
-          test -n "$STAGING_HOST"
-          test -n "$STAGING_USER"
-          test -n "$STAGING_PATH"
+          if [ -z "$STAGING_HOST" ]; then
+            echo "::error::Missing staging environment secret: STAGING_HOST"
+            exit 1
+          fi
+          if [ -z "$STAGING_USER" ]; then
+            echo "::error::Missing staging environment secret: STAGING_USER"
+            exit 1
+          fi
+          if [ -z "$STAGING_PATH" ]; then
+            echo "::error::Missing staging environment secret: STAGING_PATH"
+            exit 1
+          fi
           port="${STAGING_PORT:-22}"
           tar -C dist -czf - . | ssh \
             -i "$HOME/.ssh/staging_deploy" \
