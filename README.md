@@ -80,7 +80,23 @@ Typical deployment options:
 - object storage/CDN static hosting
 - an existing web server configured to serve the contents of `dist/`
 
-No automated live deployment is configured here, and this task did not deploy to production.
+Automated staging deployment is configured in `.github/workflows/deploy-staging.yml`.
+
+Every push to `mohammadreza-shahri-deploy-pishrodadeh-staging` runs the syntax and regression checks first, then uploads only `dist/` to `https://staging.aria-man.com/` over SSH. The workflow can also be started manually from the Actions tab.
+
+One-time GitHub setup is required:
+
+1. Create a repository environment named `staging`.
+2. Add these environment secrets:
+  - `STAGING_HOST` — staging server hostname or IP
+  - `STAGING_USER` — SSH deployment user
+  - `STAGING_PORT` — optional SSH port; defaults to `22`
+  - `STAGING_PATH` — the nginx document root for this site
+  - `STAGING_SSH_KEY` — private key for the deployment user
+  - `STAGING_KNOWN_HOSTS` — the pinned `known_hosts` line for the server
+3. Add the workflow's public key to the deployment user's `authorized_keys`.
+
+After that setup, changes pushed to the staging branch deploy automatically without a manual request. The SSH user should be restricted to the staging document root and should not have broad administrative access.
 
 ## Validation completed for this revision
 
