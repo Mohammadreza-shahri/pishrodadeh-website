@@ -1,0 +1,146 @@
+name: Validate and deploy production
+
+on:
+  # Production is published deliberately, never as a side effect of a push.
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm publishing to https://aria-man.com/'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate static app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refuse to run without explicit confirmation
+        if: github.event.inputs.confirm != 'deploy'
+        run: |
+          echo "::error::The confirm input must be exactly 'deploy'. Got: '${{ github.event.inputs.confirm }}'"
+          exit 1
+
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check dist/app.js
+          node --check dist/engine.js
+          node --check dist/i18n.js
+          node --check dist/quote.js
+
+      - name: Run regression tests
+        run: |
+          node tools/test-engine.mjs
+          node tools/test-quote.mjs
+          node tools/test-equivalence.mjs
+          node tools/test-i18n.mjs
+          node tools/test-inert-rules.mjs
+
+      - name: Verify generated translation blocks are current
+        run: node tools/build-rule-i18n.mjs
+
+      - name: Verify the engine still matches its frozen reference
+        run: |
+          node tools/build-equivalence-test.mjs
+          git diff --exit-code -- tools/test-equivalence.mjs
+
+      - name: Verify no local verification artifacts ship
+        run: |
+          if [ -e dist/__browser-check.js ] || [ -e dist/__browser-check.html ]; then
+            echo "::error::dist contains local verification artifacts; delete dist/__browser-check.*"
+            exit 1
+          fi
+
+      - name: Show what will be published
+        run: |
+          echo "Commit: ${{ github.sha }}"
+          find dist -type f | sort
+
+  deploy:
+    name: Deploy dist to production server
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: Production
+      url: https://aria-man.com/
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Configure SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.PRODUCTION_SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.PRODUCTION_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SSH_PRIVATE_KEY" ]; then
+            echo "::error::Missing Production environment secret: PRODUCTION_SSH_KEY"
+            exit 1
+          fi
+          if [ -z "$SSH_KNOWN_HOSTS" ]; then
+            echo "::error::Missing Production environment secret: PRODUCTION_KNOWN_HOSTS"
+            exit 1
+          fi
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/production_deploy"
+          chmod 600 "$HOME/.ssh/production_deploy"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+
+      - name: Upload static files
+        shell: bash
+        env:
+          PRODUCTION_HOST: ${{ secrets.PRODUCTION_HOST }}
+          PRODUCTION_USER: ${{ secrets.PRODUCTION_USER }}
+          PRODUCTION_PORT: ${{ secrets.PRODUCTION_PORT }}
+          PRODUCTION_PATH: ${{ secrets.PRODUCTION_PATH }}
+        run: |
+          set -euo pipefail
+          for name in PRODUCTION_HOST PRODUCTION_USER PRODUCTION_PATH; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing Production environment secret: $name"
+              exit 1
+            fi
+          done
+          port="${PRODUCTION_PORT:-22}"
+          tar -C dist -czf - . | ssh \
+            -i "$HOME/.ssh/production_deploy" \
+            -p "$port" \
+            -o BatchMode=yes \
+            "$PRODUCTION_USER@$PRODUCTION_HOST" \
+            "set -eu
+             root='$PRODUCTION_PATH'
+             tmp=\$(mktemp -d)
+             trap 'rm -rf \"\$tmp\"' EXIT
+             tar -xzf - -C \"\$tmp\"
+             test -f \"\$tmp/index.html\" || { echo 'refusing to publish: payload has no index.html' >&2; exit 1; }
+             test -f \"\$tmp/app.js\" || { echo 'refusing to publish: payload has no app.js' >&2; exit 1; }
+             mkdir -p \"\$root\"
+             if [ -n \"\$(ls -A \"\$root\" 2>/dev/null || true)\" ]; then
+               backup=\"\$root.bak-\$(date -u +%Y%m%dT%H%M%SZ)\"
+               cp -a \"\$root\" \"\$backup\"
+               echo \"backed up previous release to \$backup\"
+             fi
+             find \"\$root\" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+             cp -a \"\$tmp\"/. \"\$root\"/
+             echo 'published'"
+
+      - name: Verify production response
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 --location https://aria-man.com/ > /dev/null
