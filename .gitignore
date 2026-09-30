@@ -1,0 +1,24 @@
+# Local verification artifacts — never part of the deployed site or the repo.
+# dist/ is uploaded verbatim by the deploy workflows, so the browser harnesses are
+# staged into it only for the duration of a check (tools/browser-check/stage.mjs).
+dist/__browser-check.js
+dist/__browser-check.html
+dist/__shot.js
+dist/__shot.html
+
+# Screenshot output from tools/browser-check/shot.js
+_shots/
+
+# Chrome profiles and DOM dumps produced while running headless checks
+_chrome-profile/
+_shot-profile/
+_render.html
+_diag*.html
+_*.html
+
+# Node / editor noise
+node_modules/
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.swp
