@@ -1,0 +1,26 @@
+export const copy = {
+  fa: {
+    title:'استودیوی پیکربندی تجهیزات', brand:'آریامن', tagline:'انتخاب آگاهانه، پیکربندی دقیق',
+    choose:'چه تجهیزاتی را می‌خواهید پیکربندی کنید؟',
+    lead:'ابتدا نوع محصول را انتخاب کنید. سپس نیازهای خود را مشخص کنید و قطعات و گزارش فنی را بررسی کنید.',
+    servers:'سرور', storage:'ذخیره‌سازی',
+    serversLead:'انتخاب سرور و پیکربندی پردازنده، حافظه، دیسک و قطعات بر اساس کاربرد.',
+    storageLead:'ذخیره‌سازی اصلی، پشتیبان‌گیری و آرشیو؛ از نیازسنجی تا انتخاب دستگاه و قطعات.',
+    available:'محصولات قابل پیکربندی', select:'شروع پیکربندی', vendor:'سازنده را انتخاب کنید',
+    home:'تغییر نوع محصول', language:'English', loading:'در حال آماده‌سازی…',
+    failed:'بارگذاری پیکربندی انجام نشد. دوباره تلاش کنید.', retry:'تلاش دوباره',
+    private:'ذخیره پیش‌نویس در همین مرورگر', future:'هر سازنده مسیر پیکربندی و کاتالوگ مخصوص خود را دارد.',
+  },
+  en: {
+    title:'Equipment Configuration Studio', brand:'ARIAMAN', tagline:'Informed selection. Precise configuration.',
+    choose:'What would you like to configure?',
+    lead:'Choose a product type, describe your needs, then review the parts and technical report.',
+    servers:'Server', storage:'Storage',
+    serversLead:'Select a server and configure processors, memory, drives and components around your workload.',
+    storageLead:'Primary storage, backup and archive: from requirements to systems and parts.',
+    available:'Available configurators', select:'Start configuration', vendor:'Choose a vendor',
+    home:'Change product', language:'فارسی', loading:'Preparing configurator…',
+    failed:'The configurator could not load. Please try again.', retry:'Retry',
+    private:'Drafts saved in this browser', future:'Each vendor has its own configuration flow and catalog.',
+  },
+};

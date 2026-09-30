@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "status": "needs_review",
+  "full_qualification": false,
+  "model": {
+    "id": "storeonce-3760",
+    "name": "HPE StoreOnce 3760",
+    "short": "3760",
+    "family": "storeonce",
+    "access": "backup",
+    "access_modes": [
+      "backup"
+    ],
+    "qs_id": "14996",
+    "lifecycle": "active_in_snapshot",
+    "lifecycle_basis": "QuickSpecs document status; model availability and entitlement require confirmation.",
+    "evidence": [
+      {
+        "qs_id": "14996",
+        "version": 64,
+        "sha256": "0efb0a716793700ae7c833d96520aa460c2fcd58d22ea44e5e4066a8cc139af5",
+        "start": 4481,
+        "end": 4625,
+        "quote": "enterprise environments - HPE StoreOnce 3760 for mid-range and small data center environments - HPE StoreOnce 3720 for small and branch environm",
+        "url": null
+      }
+    ]
+  },
+  "configuration": {
+    "schema_version": 1,
+    "model_id": "storeonce-3760",
+    "host_protocol": null,
+    "items": [
+      {
+        "option_id": "14996:S4P73A",
+        "quantity": 1
+      },
+      {
+        "option_id": "14996:S4P75A",
+        "quantity": 1
+      }
+    ],
+    "diskGroups": []
+  },
+  "requirements": {
+    "purposes": [
+      "backup"
+    ],
+    "access": null,
+    "workload": null,
+    "protocol": null,
+    "availability": null,
+    "budgetTier": null,
+    "lifecycle": null,
+    "usableTB": null,
+    "annualGrowthPct": null,
+    "years": null,
+    "headroomPct": 20,
+    "backupTB": 10,
+    "changePct": 5,
+    "retentionDays": 30,
+    "fullEveryDays": 7,
+    "backupWindowHours": 8,
+    "rpoMinutes": null,
+    "rtoHours": 4,
+    "iops": null,
+    "latencyMs": null,
+    "sequentialMBps": null,
+    "existingLTO": null,
+    "offlineCopy": true,
+    "immutable": true,
+    "backupSoftware": null,
+    "existingModel": null
+  },
+  "capacity": {
+    "usableTB": 216,
+    "basis": "documented_local",
+    "groups": [],
+    "tape": {
+      "status": "unknown",
+      "nativeTB": null,
+      "slots": null
+    }
+  },
+  "planning": {
+    "primary": {
+      "status": "unknown",
+      "usableTB": null,
+      "requiredTB": null
+    },
+    "backup": {
+      "status": "estimate",
+      "fullCopies": 5,
+      "incrementalCopies": 25,
+      "retainedTB": 62.5,
+      "requiredTB": 78.125,
+      "fullBackupMBps": 347.22222222222223,
+      "dailyIncrementalMBps": 17.36111111111111,
+      "restoreMBps": 694.4444444444445,
+      "assumptions": {
+        "dataReductionRatio": 1,
+        "headroomPct": 20,
+        "schedule": "Periodic retained fulls plus daily incrementals; conservative rolling retention; no synthetic-full or deduplication credit."
+      }
+    }
+  },
+  "findings": [
+    {
+      "key": "qualification",
+      "status": "unknown",
+      "message": "میزبان، سیستم‌عامل، HBA، میان‌افزار، کابل‌کشی، مجوز و توپولوژی پشتیبانی‌شده نیازمند بررسی فنی است.",
+      "evidence": [
+        {
+          "qs_id": "14996",
+          "version": 64,
+          "sha256": "0efb0a716793700ae7c833d96520aa460c2fcd58d22ea44e5e4066a8cc139af5",
+          "start": 4481,
+          "end": 4625,
+          "quote": "enterprise environments - HPE StoreOnce 3760 for mid-range and small data center environments - HPE StoreOnce 3720 for small and branch environm",
+          "url": null
+        }
+      ]
+    },
+    {
+      "key": "performance_unknown",
+      "status": "unknown",
+      "message": "IOPS، تأخیر، توان عملیاتی و اهداف بازیابی به اعتبارسنجی بار کاری نیاز دارند.",
+      "evidence": []
+    },
+    {
+      "key": "immutable_gap",
+      "status": "unknown",
+      "message": "قفل نگهداری، نوار WORM، یکپارچگی نرم‌افزار و مدیریت کلید بررسی شود.",
+      "evidence": []
+    }
+  ],
+  "bom": [
+    {
+      "option_id": "14996:S4P73A",
+      "sku": "S4P73A",
+      "description": "HPE StoreOnce 3760 144TB Base System",
+      "category": "base",
+      "quantity": 1,
+      "assurance": "source_listed",
+      "evidence": [
+        {
+          "qs_id": "14996",
+          "version": 64,
+          "sha256": "0efb0a716793700ae7c833d96520aa460c2fcd58d22ea44e5e4066a8cc139af5",
+          "start": 34991,
+          "end": 35034,
+          "quote": "HPE StoreOnce 3760 144TB Base System S4P73A",
+          "url": null
+        }
+      ]
+    },
+    {
+      "option_id": "14996:S4P75A",
+      "sku": "S4P75A",
+      "description": "HPE StoreOnce 3760 144TB Capacity Upgrade Kit",
+      "category": "capacity_upgrade",
+      "quantity": 1,
+      "assurance": "source_listed",
+      "evidence": [
+        {
+          "qs_id": "14996",
+          "version": 64,
+          "sha256": "0efb0a716793700ae7c833d96520aa460c2fcd58d22ea44e5e4066a8cc139af5",
+          "start": 35246,
+          "end": 35298,
+          "quote": "HPE StoreOnce 3760 144TB Capacity Upgrade Kit S4P75A",
+          "url": null
+        }
+      ]
+    }
+  ]
+}
