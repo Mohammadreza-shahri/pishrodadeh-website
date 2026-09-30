@@ -37,6 +37,24 @@ jobs:
         run: |
           node tools/test-engine.mjs
           node tools/test-quote.mjs
+          node tools/test-equivalence.mjs
+          node tools/test-i18n.mjs
+          node tools/test-inert-rules.mjs
+
+      - name: Verify generated translation blocks are current
+        run: node tools/build-rule-i18n.mjs
+
+      - name: Verify the engine still matches its frozen reference
+        run: |
+          node tools/build-equivalence-test.mjs
+          git diff --exit-code -- tools/test-equivalence.mjs
+
+      - name: Verify no local verification artifacts ship
+        run: |
+          if [ -e dist/__browser-check.js ] || [ -e dist/__browser-check.html ]; then
+            echo "::error::dist contains local verification artifacts; delete dist/__browser-check.*"
+            exit 1
+          fi
 
   deploy:
     name: Deploy dist to staging server

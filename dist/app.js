@@ -34,6 +34,12 @@ let restoreNotice = null;
 let showMobileSummary = false;
 
 const t = key => strings[lang][key] || strings.en[key] || key;
+/* Direct-conflict keys are namespaced so they cannot collide with a dictionary label that
+   happens to share the name (e.g. the BOM metric `gpuMemory`). */
+const conflictText = key => t(`conflict_${key}`);
+/* Workload labels are not the same strings as the component-category labels: `storage` is the
+   component category, `workloadStorage` is the workload. */
+const workloadLabel = key => t(key === 'storage' ? 'workloadStorage' : key);
 const number = value => new Intl.NumberFormat(lang === 'fa' ? 'fa-IR' : 'en-US', {maximumFractionDigits: 2}).format(value);
 const el = (tag, text = null, cls = '') => {
   const node = document.createElement(tag);
@@ -64,37 +70,8 @@ const icons = {
   summary: 'M4 5h16 M4 12h16 M4 19h10',
 };
 
-const faRules = {
-  secondary_cpu: 'رایزر ثانویه به پردازنده دوم نیاز دارد.',
-  hot_cpu_fans: 'پردازنده بالاتر از ۲۰۵ وات به فن High Performance نیاز دارد.',
-  '3508_memory': 'پردازنده 3508U با DIMM 96GB 5600MT/s قابل ترکیب نیست.',
-  '3508_single': 'پردازنده 3508U فقط در پیکربندی تک‌سوکت پشتیبانی می‌شود.',
-  lff_rear: 'کیج عقب 2LFF به شاسی LFF نیاز دارد.',
-  cache_backup: 'کنترلر دارای کش به باتری یا خازن پشتیبان معرفی‌شده نیاز دارد.',
-  fh_blocks_slot2: 'رایزر ثانویه Full Height، اسلات ۲ را مسدود می‌کند.',
-  '186_270_cooling': 'پردازنده ۱۸۶ تا ۲۷۰ وات به هیت‌سینک و فن High Performance مشخص‌شده نیاز دارد.',
-  dual_hot_liquid: 'دو پردازنده با توان حداقل ۲۷۱ وات به راهکار خنک‌سازی مایع مشخص‌شده نیاز دارند.',
-  '1600_input': 'منبع تغذیه 1600W Platinum به ورودی ۲۰۰ تا ۲۴۰ ولت نیاز دارد.',
-  single_socket_models: 'این مدل پردازنده فقط در پیکربندی تک‌سوکت پشتیبانی می‌شود.',
-  '195_heatsink': 'پردازنده حداقل ۱۹۵ وات به هیت‌سینک P47224-B21 نیاز دارد.',
-  '300_fans': 'پردازنده حداقل ۳۰۰ وات به هر دو کیت فن مشخص‌شده نیاز دارد.',
-  cpu2_fan: 'پردازنده دوم یا گزینه وابسته به آن، به کیت فن P47902-B21 نیاز دارد.',
-  rich_config_fans: 'این ترکیب حافظه، ذخیره‌سازی یا GPU به هر دو کیت فن نیاز دارد.',
-  dual_cpu_required: 'این پلتفرم به دو پردازنده نیاز دارد.',
-  gpu_required: 'پیکربندی این پلتفرم بدون GPU مجاز نیست.',
-  '270_heatsink': 'پردازنده حداقل ۲۷۰ وات به هیت‌سینک P51832-B21 نیاز دارد.',
-  dimm_population: 'هر پردازنده باید با ۱، ۲، ۴، ۶، ۸ یا ۱۲ DIMM جمعیت‌گذاری شود.',
-  '96_4800_quantity': 'حافظه 96GB 4800 باید در تعداد ۱۶ عدد انتخاب شود.',
-  '96_5600_quantity': 'حافظه 96GB 5600 فقط در تعداد ۲، ۱۲، ۱۶ یا ۲۴ عدد مجاز است.',
-  nvme_only: 'این پلتفرم فقط درایو NVMe SSD می‌پذیرد.',
-  controller_mix: 'ترکیب مدل‌های مختلف کنترلر مجاز نیست.',
-  trimode_backup: 'کنترلر Tri-mode به باتری یا خازن پشتیبان مشخص‌شده نیاز دارد.',
-  prose_dimms_per_cpu: 'تعداد DIMM در هر پردازنده از ظرفیت ثبت‌شده بیشتر است.',
-  prose_psu_mixing: 'ترکیب مدل‌های مختلف منبع تغذیه مجاز نیست.',
-  cables_balanced_direct: 'مسیر NVMe مستقیم متوازن به کیت کابل P55704-B21 نیاز دارد.',
-  cables_balanced_type_p: 'مسیر NVMe متوازن با کنترلرهای type-p به دو کیت کابل مشخص‌شده نیاز دارد.',
-  cables_balanced_oroc: 'مسیر NVMe متوازن با کنترلرهای OROC به دو کیت کابل مشخص‌شده نیاز دارد.',
-};
+/* Rule prose lives in i18n.js as `rule_<suffix>` keys so both locales stay reviewable in one
+   place. English still prefers the catalog's own message (it carries the source wording). */
 
 const guidedProfiles = {
   virtualization: [
@@ -303,8 +280,8 @@ function chosen(cat) {
 }
 
 function ruleText(rule) {
-  if (lang === 'en') return rule.message;
-  return faRules[rule.id.split(':')[1]] || t('ruleNeedsReview');
+  if (lang === 'en' && rule.message) return rule.message;
+  return t(`rule_${rule.id.split(':')[1]}`);
 }
 
 function evidence(items) {
@@ -390,7 +367,7 @@ function coverageModal() {
     const coverage = model()?.coverage;
     box.append(
       el('p', t('coverageBody')),
-      el('p', `${data.models.length} ${lang === 'fa' ? 'پلتفرم' : 'platforms'} · ${data.rules.length} ${lang === 'fa' ? 'قاعده اجرایی' : 'executable rules'} · ${data.options.length} ${lang === 'fa' ? 'گزینه منبع‌دار' : 'source-linked entries'}`, 'small muted'),
+      el('p', `${number(data.models.length)} ${t('platformsLabel')} · ${number(data.rules.length)} ${t('rulesLabel')} · ${number(data.options.length)} ${t('sourceLinkedMetric')}`, 'small muted'),
     );
     if (coverage) {
       const groups = el('div', null, 'coverage-groups');
@@ -462,7 +439,7 @@ function layout() {
   app.replaceChildren();
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === 'fa' ? 'rtl' : 'ltr';
-  document.title = lang === 'fa' ? 'آریامن | پیکربندی سرور HPE' : 'Ariaman | HPE Server Configurator';
+  document.title = t('pageTitle');
 
   const shell = el('div', null, 'shell');
   const header = el('header', null, 'site-header');
@@ -473,16 +450,16 @@ function layout() {
   logoLink.rel = 'noreferrer';
   const logo = document.createElement('img');
   logo.src = './ariaman-logo.png';
-  logo.alt = lang === 'fa' ? 'نشان آریامن' : 'Ariaman logo';
+  logo.alt = t('logoAlt');
   logoLink.append(logo);
   const label = el('div', null, 'brand-copy');
-  label.append(el('small', lang === 'fa' ? 'فروشگاه سرور و تجهیزات شبکه' : 'HPE servers & network equipment'), el('strong', t('brand')));
+  label.append(el('small', t('brandTagline')), el('strong', t('brand')));
   brand.append(logoLink, label);
 
   const actions = el('div', null, 'header-actions');
   actions.append(tag(t('private'), 'dark'));
   if (state.model_id) actions.append(tag(model().short, 'outline'));
-  const language = btn(lang === 'fa' ? 'English' : 'فارسی', () => {
+  const language = btn(t('languageSwitch'), () => {
     const focus = focusSnapshot();
     lang = lang === 'fa' ? 'en' : 'fa';
     persistState();
@@ -507,7 +484,7 @@ function layout() {
   main.id = 'main-content';
   main.tabIndex = -1;
   const stepper = el('nav', null, 'stepper');
-  stepper.setAttribute('aria-label', lang === 'fa' ? 'مراحل پیکربندی' : 'Configuration steps');
+  stepper.setAttribute('aria-label', t('stepsLabel'));
   for (let index = 1; index <= 4; index += 1) {
     const complete = stepComplete(index);
     const visited = state.visitedSteps?.includes(index);
@@ -621,7 +598,7 @@ function workPage(root) {
     card.type = 'button';
     card.setAttribute('aria-pressed', String(state.workload === key));
     const copy = el('div');
-    copy.append(el('h3', key === 'storage' ? (lang === 'fa' ? 'ذخیره‌سازی و پشتیبان‌گیری' : 'Storage & backup') : t(key)), el('p', t(`${key}Desc`)));
+    copy.append(el('h3', workloadLabel(key)), el('p', t(`${key}Desc`)));
     const foot = el('div', null, 'workload-meta');
     foot.append(tag(t('guidedMode'), 'outline'), tag(t('reviewRequired'), 'amber'));
     card.append(icon(key), copy, foot);
@@ -868,7 +845,7 @@ function partTitle(option) {
   const attrs = option.attributes;
   switch (option.category) {
     case 'cpu':
-      return `Intel Xeon ${attrs.model} · ${attrs.cores} ${lang === 'fa' ? 'هسته' : 'cores'}`;
+      return `Intel Xeon ${attrs.model} · ${attrs.cores} ${t('coresUnit')}`;
     case 'memory':
       return `${attrs.capacity_gb} GB · DDR5-${attrs.speed_mts} · ${attrs.type || 'DIMM'}`;
     case 'storage':
@@ -894,7 +871,7 @@ function helperCopy(option) {
 
 function issueState() {
   const values = stats(state, data);
-  const direct = directConflicts(state, data).map(item => ({...item, message: t(item.key === 'gpuMemory' ? 'gpuMemoryTooLow' : item.key)}));
+  const direct = directConflicts(state, data).map(item => ({...item, message: conflictText(item.key)}));
   const findings = activeFindings(state, data).map(item => ({...item, message: ruleText(item)}));
   const missing = [];
   const missingActions = [];
@@ -1056,21 +1033,32 @@ function renderParts(root, issues) {
   root.append(top);
 
   const all = data.options.filter(option => option.model_id === state.model_id && option.category === category);
-  const checked = all.map(option => ({option, check: optionCheck(state, data, option)}));
-  const visible = checked.filter(({option, check}) => !check.hidden && (!query || `${option.description} ${option.sku}`.toLowerCase().includes(query.toLowerCase())));
+  /**
+   * `optionCheck` is the most expensive call in the app and the counts below used to run it for
+   * every option in the category (174 storage options on the DL360) on every keystroke. The
+   * headline numbers are stated per category in the i18n copy instead, and visibility problems
+   * among the current selections are still reported by name further down, so evaluation is now
+   * limited to the options actually rendered.
+   */
+  const matchesQuery = option => !query || `${option.description} ${option.sku}`.toLowerCase().includes(query.toLowerCase());
+  const visible = all.filter(matchesQuery);
 
-  root.append(el('p', `${number(visible.length)} ${t('visibleOptions')} · ${number(checked.filter(item => item.check.hidden).length)} ${t('hiddenCount')}`, 'small muted'));
+  const currentBad = all
+    .filter(option => state.selected[category]?.includes(option.sku))
+    .map(option => ({option, check: optionCheck(state, data, option)}))
+    .filter(({check}) => check.hidden);
+  root.append(el('p', `${number(visible.length)} ${t('visibleOptions')} · ${number(all.length - visible.length)} ${t('notShown')}`, 'small muted'));
 
-  const currentBad = checked.filter(({option, check}) => check.hidden && state.selected[category]?.includes(option.sku));
   if (currentBad.length) {
-    const note = callout(t('incompatibleSelected'), currentBad.map(item => `${item.option.sku} · ${item.check.reasons.map(reason => t(reason)).join(' · ') || t('knownConflict')}`).join('\n'), 'warning');
+    const note = callout(t('incompatibleSelected'), currentBad.map(item => `${item.option.sku} · ${item.check.reasons.map(conflictText).join(' · ') || t('knownConflict')}`).join('\n'), 'warning');
     note.append(btn(t('remove'), () => withRender(() => { delete state.selected[category]; }, {announce: t('removed')}), 'compact'));
     root.append(note);
   }
 
   const list = el('div', null, 'part-list');
   const start = page * PAGE_SIZE;
-  for (const {option, check} of visible.slice(start, start + PAGE_SIZE)) {
+  const pageItems = visible.slice(start, start + PAGE_SIZE).map(option => ({option, check: optionCheck(state, data, option)}));
+  for (const {option, check} of pageItems) {
     const active = state.selected[category]?.includes(option.sku);
     const card = el('article', null, `part-card ${active ? 'selected' : ''}`.trim());
     const content = el('div', null, 'part-content');
@@ -1207,7 +1195,7 @@ function requirementsPanel(issues) {
     copy.append(
       el('strong', need.any.length > 1 ? t('chooseOne') : t('requiredAccessory')),
       el('p', ruleText(need.rule)),
-      el('p', `${t('triggeredBy')}: ${need.rule.domain || t('requirements')}`, 'small muted'),
+      el('p', `${t('triggeredBy')}: ${t(`domain_${need.rule.domain}`)}`, 'small muted'),
       el('p', `${t('qty')}: ${number(need.quantity || 1)} · ${need.any.length > 1 ? t('chooseOneBody') : t('allRequiredBody')}`, 'small muted'),
       bidi(need.any.join(' / '), 'part-sku'),
     );

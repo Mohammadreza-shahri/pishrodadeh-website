@@ -1,0 +1,32 @@
+/*
+ * Equivalence guard for option visibility.
+ *
+ * WHY THIS EXISTS
+ * `renderParts` calls `optionCheck` once per option in the active category on every
+ * render. That is the hottest path in the app (174 storage options on the DL360), so it
+ * is worth optimising — but `optionCheck` decides what a customer is allowed to see, and
+ * the project rule is that compatibility states may never be silently weakened. So the
+ * optimisation is guarded by a frozen copy of the previous implementation.
+ *
+ * HOW IT WORKS
+ * The functions below marked "verbatim from dist/engine.js" are copied mechanically out
+ * of the engine by tools/build-equivalence-test.mjs. The two composite functions
+ * (`activeFindingsRef`, `referenceOptionCheck`) are the pre-optimisation versions. The
+ * test asserts that the current engine produces an identical decision for every
+ * (state, option) pair in a deterministic corpus, including deliberately invalid ones.
+ *
+ * Regenerate after an intentional engine change:
+ *   node tools/build-equivalence-test.mjs   # refresh the frozen copy
+ *   node tools/test-equivalence.mjs         # re-verify
+ *
+ * Run: node tools/test-equivalence.mjs
+ */
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const here = dirname(fileURLToPath(import.meta.url));
+const data = JSON.parse(readFileSync(join(here, '..', 'dist', 'catalog.json'), 'utf8'));
+
+const engine = await import(new URL('../dist/engine.js', import.meta.url).href);
+const { initial, CATEGORIES, getOption, optionCheck, activeFindings } = engine;

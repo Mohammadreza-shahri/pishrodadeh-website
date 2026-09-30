@@ -8,7 +8,7 @@ function field(o,p){for(const k of p.split('.')){if(o==null||!(k in o))return nu
 export function expression(n,d){if(n==null||typeof n!=='object')return n;const run=x=>expression(x,d);switch(n.op){case 'field':return field(d,n.path);case 'literal':return n.value;case 'selected':return d.items.some(i=>i.sku===n.sku&&i.quantity>=(n.quantity||1));case 'all':{const a=n.args.map(run);return a.includes(false)?false:a.some(x=>x==null)?null:true;}case 'any':{const a=n.args.map(run);return a.includes(true)?true:a.some(x=>x==null)?null:false;}case 'not':{let a=run(n.arg);return a==null?null:!a;}default:{const a=run(n.left),b=run(n.right);if(a==null||b==null)return null;switch(n.op){case 'eq':return a===b;case 'ne':return a!==b;case 'gt':return a>b;case 'gte':return a>=b;case 'lt':return a<b;case 'lte':return a<=b;case 'in':return b.includes(a);default:throw Error('Unknown rule operator');}}}}
 export function facts(s,data){const opts=selectedOptions(s,data),one=cat=>opts.find(o=>o.category===cat),cpu=one('cpu'),mem=one('memory'),drive=one('storage'),controller=one('controller');const risers=opts.filter(o=>o.category==='riser');const has=sku=>opts.some(o=>o.sku===sku);return {chassis:s.chassis,upgrade:false,cpu:cpu?{...cpu.attributes,count:s.cpuQty,mixed:false}:{count:s.cpuQty},items:opts.map(o=>({sku:o.sku,quantity:quantity(s,o)})),features:{secondary_riser:risers.some(o=>o.attributes.position==='secondary'),secondary_fh_riser:null,tertiary_riser:risers.some(o=>o.attributes.position==='tertiary'),high_performance_fans:has('P48820-B21')||has('P48908-B21'),controller_cache:controller?controller.attributes.cached:false,controller_count:controller?1:0,controller_mixed:false,trimode_controller:null,gpu_count:one('gpu')?s.gpuQty:0,gpu_mixed:false,drive_count:drive?s.driveQty:0,drive_protocol:drive?.attributes.protocol??null,ns204i:false,edsff:s.chassis?.includes('EDSFF')??false,sas4_mu:null,redundant_fans:null,psu_mixed:false,psu_family:one('psu')?.attributes.watts===1600&&one('psu').description.includes('Platinum')?'1600W Platinum':null,direct_liquid_cooling:s.cooling==='liquid',rear_primary_2lff:has('P48823-B21'),rear_secondary_2lff:has('P51095-B21'),primary_pcie_cards:null,secondary_pcie_cards:null,slots5_10_used:null,slot2_used:null,pcie_card_count:opts.filter(o=>['controller','hba','gpu'].includes(o.category)).length,media_box:null,storage_layout:null,vroc_nvme:null},power:{input_v:s.inputV},summary:{dimm_count:mem?s.memoryQty:0,max_dimms_per_cpu:mem?Math.ceil(s.memoryQty/s.cpuQty):0,has_96_5600:mem?mem.attributes.capacity_gb===96&&mem.attributes.speed_mts===5600:false,has_96_4800:mem?mem.attributes.capacity_gb===96&&mem.attributes.speed_mts===4800:false,count_96_4800:mem?.attributes.capacity_gb===96&&mem.attributes.speed_mts===4800?s.memoryQty:0,count_96_5600:mem?.attributes.capacity_gb===96&&mem.attributes.speed_mts===5600?s.memoryQty:0,has_256:mem?.attributes.capacity_gb===256,mixed_is_3ds:false,mixed_rank:false,mixed_width:false,population_380a_valid:mem?s.cpuQty===2&&s.memoryQty%2===0&&[1,2,4,6,8,12].includes(s.memoryQty/2):true}};}
 export function activeFindings(s,data){const f=facts(s,data),out=[];for(const r of data.rules.filter(r=>r.model_id===s.model_id)){const when=expression(r.when,f),ok=expression(r.assert,f);if(when===false||ok===true)continue;out.push({...r,status:when==null||ok==null?'unknown':'conflict'});}return out;}
-export function directConflicts(s,data){const out=[],cpu=getOption(s,data,'cpu'),mem=getOption(s,data,'memory'),drive=getOption(s,data,'storage'),psu=getOption(s,data,'psu'),gpu=getOption(s,data,'gpu');const add=(key,category)=>out.push({key,category});
+export function directConflicts(s,data,items=selectionItems(s)){const out=[],cpu=getOption(s,data,'cpu'),mem=getOption(s,data,'memory'),drive=getOption(s,data,'storage'),psu=getOption(s,data,'psu'),gpu=getOption(s,data,'gpu');const add=(key,category)=>out.push({key,category});
 
  if(mem&&cpu&&s.model_id==='16911'&&cpu.attributes.generation===5&&mem.attributes.speed_mts===4800)add('memoryGeneration','memory');
  if(mem&&cpu&&s.model_id==='16913'&&((cpu.attributes.generation===4&&mem.attributes.speed_mts!==4800)||(cpu.attributes.generation===5&&![5200,5600].includes(mem.attributes.speed_mts))))add('memoryGeneration','memory');
@@ -19,17 +19,43 @@ export function directConflicts(s,data){const out=[],cpu=getOption(s,data,'cpu')
  if(gpu&&s.workload.startsWith('ai')&&gpu.attributes.vram_gb<s.requirements.gpuGB)add('gpuMemory','gpu');
  if(mem&&s.memoryQty>(s.model_id==='16913'?24:32))add('memorySlots','memory');
  return out;}
+const RULE_PATHS={cpu:['cpu.','summary.'],memory:['summary.'],storage:['features.drive_'],controller:['features.controller_','features.trimode'],gpu:['features.gpu_'],riser:['features.secondary','features.tertiary','features.pcie'],psu:['features.psu_','power.'],backplane:['chassis','features.rear_'],cooling:['features.high_performance_fans'],kits:[]};
+const MULTI_CATEGORIES=['riser','cooling','kits'];
+function selectionItems(s){
+ const items=[];
+ for(const [cat,skus] of Object.entries(s.selected))for(const sku of skus)items.push({sku,quantity:quantity(s,{category:cat})});
+ return items;
+}
 export function optionCheck(s,data,o){
  if(o.model_id!==s.model_id)return{hidden:true,reasons:['platform']};
- const trial=structuredClone(s),multi=['riser','cooling','kits'].includes(o.category);
- trial.selected[o.category]=multi?[...new Set([...(trial.selected[o.category]||[]),o.sku])]:[o.sku];
- const direct=directConflicts(trial,data).filter(x=>x.category===o.category);
- const paths={cpu:['cpu.','summary.'],memory:['summary.'],storage:['features.drive_'],controller:['features.controller_','features.trimode'],gpu:['features.gpu_'],riser:['features.secondary','features.tertiary','features.pcie'],psu:['features.psu_','power.'],backplane:['chassis','features.rear_'],cooling:['features.high_performance_fans'],kits:[]}[o.category]||[];
+ const multi=MULTI_CATEGORIES.includes(o.category);
+ const paths=RULE_PATHS[o.category]||[];
  function relevant(n){if(!n||typeof n!=='object')return false;if(n.op==='field')return paths.some(p=>n.path.startsWith(p));if(n.op==='selected')return n.sku===o.sku;return Object.values(n).some(v=>Array.isArray(v)?v.some(relevant):relevant(v));}
- const conflicts=activeFindings(trial,data).filter(r=>r.status==='conflict'&&(relevant(r.when)||relevant(r.assert)));
- const requirements=conflicts.filter(r=>containsSelected(r.assert)||r.domain==='thermal');
- const incompatible=conflicts.filter(r=>!requirements.includes(r)&&!(r.minimum_required&&r.domain==='gpu'&&o.category!=='gpu'));
- return{hidden:direct.length>0||incompatible.length>0,reasons:direct.map(x=>x.key),requirements,conflicts:incompatible,review:true};
+ const selectedNow=s.selected[o.category]||[];
+ const forced=multi?[...new Set([...selectedNow,o.sku])]:[o.sku];
+ /* Forcing the category replaces its `selected` entries wholesale, so every rule-visible fact
+    except the tested SKU is fixed for the whole category. Evaluate the rules ONCE against the
+    trial that keeps the other categories intact, then let each option answer only the two
+    SKU-dependent questions: is the rule relevant/conflicting for this SKU (`relevant`), and
+    does its assert name this SKU (`containsSelected`). */
+ const trial={...s,selected:{...s.selected,[o.category]:forced}};
+ const items=selectionItems(trial);
+ const findings=activeFindings(trial,data);
+ const conflicts=new Set();
+ const requires=new Set();
+ for(const r of findings){
+  if(r.status!=='conflict')continue;
+  if(!(relevant(r.when)||relevant(r.assert)))continue;
+  conflicts.add(r.id);
+  if(containsSelected(r.assert)||r.domain==='thermal')requires.add(r.id);
+ }
+ const requirements=findings.filter(r=>requires.has(r.id));
+ const incompatible=findings.filter(r=>conflicts.has(r.id)&&!requires.has(r.id)&&!(r.minimum_required&&r.domain==='gpu'&&o.category!=='gpu'));
+ /* A conflicting option that is ALREADY selected stays hidden with no reason keys, which is how
+    renderParts discovers it for the "selected but incompatible" callout. Preserve that exactly. */
+ const direct=directConflicts(trial,data,items).filter(x=>x.category===o.category);
+ const reasons=direct.map(x=>x.key);
+ return{hidden:direct.length>0||incompatible.length>0,reasons,requirements,conflicts:incompatible,review:true};
 }
 
 function containsSelected(n){return n&&typeof n==='object'&&(n.op==='selected'||Object.values(n).some(x=>Array.isArray(x)?x.some(containsSelected):containsSelected(x)));}

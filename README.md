@@ -34,8 +34,16 @@ This release does **not** claim full HPE qualification.
 - `dist/quote.js` — Iranian mobile number normalization for quote requests
 - `dist/catalog.json` — source-backed model, option, and rule snapshot
 - `tools/test-engine.mjs` — focused engine regression tests
+- `tools/test-equivalence.mjs` — generated guard proving option visibility is unchanged (see below)
+- `tools/build-equivalence-test.mjs` — regenerates the frozen reference inside `tools/test-equivalence.mjs`
+- `tools/test-i18n.mjs` — bilingual parity, duplicated-key, and hardcoded-string guard
+- `tools/test-inert-rules.mjs` — pins the rules that can never be decided, so the gap stays visible
+- `tools/build-rule-i18n.mjs` — regenerates the `rule_*` prose blocks in `dist/i18n.js`
+- `tools/rule-fa.json` — reviewed Persian prose for every catalog rule
 - `tools/test-quote.mjs` — quotation contact validation tests
 - `tools/build-data.py` — catalog rebuild utility
+- `tools/serve.mjs` — static file server for local verification
+- `tools/browser-check/` — headless browser smoke test (staged into `dist/` only while running)
 - `docs/design-system.md` — concise UI system notes
 - `docs/verification-report.md` — completed vs untested verification areas
 - `.github/copilot-instructions.md` — contributor conventions for future agent runs
@@ -51,10 +59,35 @@ node --check dist/i18n.js
 node --check dist/quote.js
 node tools/test-engine.mjs
 node tools/test-quote.mjs
-python -m http.server 8000 --directory dist
+node tools/test-equivalence.mjs
+node tools/test-i18n.mjs
+node tools/test-inert-rules.mjs
+node tools/build-rule-i18n.mjs   # fails if the generated rule prose is stale
+node tools/serve.mjs 8123
 ```
 
-Open `http://127.0.0.1:8000/`.
+Open `http://127.0.0.1:8123/`.
+
+### Two guarded files
+
+`dist/engine.js` decides which options a customer is allowed to see, so changes to it are
+verified against a frozen copy of the previous implementation over ~225,000 (state, option)
+pairs:
+
+```sh
+node tools/test-equivalence.mjs        # compare the engine with the frozen reference
+node tools/build-equivalence-test.mjs  # refresh the frozen copy after an intended change
+```
+
+`dist/i18n.js` cannot be checked by importing it, because a duplicated key inside the object
+literal is silently overwritten by the later definition. `tools/test-i18n.mjs` therefore parses
+the source text and also asserts that every catalog rule has Persian and English prose and that
+no user-facing string is hardcoded in `dist/app.js`. The `rule_*` prose is generated:
+
+```sh
+# edit tools/rule-fa.json, then:
+node tools/build-rule-i18n.mjs --write
+```
 
 ## Browser behavior
 
@@ -69,6 +102,9 @@ Open `http://127.0.0.1:8000/`.
 - CSV output is UTF-8 BOM encoded for Persian spreadsheet compatibility and includes formula-injection protection.
 - CSV and JSON outputs retain the technical-review limitation; JSON also separates unresolved issues and required accessory findings.
 - The technical report can be printed/saved as a branded PDF and shared through a prefilled WhatsApp handoff to 09123624305; the PDF remains a user attachment because browsers cannot silently attach files to WhatsApp.
+- Rule explanations come from `dist/i18n.js` (`rule_<suffix>` keys) in both languages rather than from an inline Persian table, so no rule falls back to a generic "needs review" line.
+- Direct-conflict reasons are namespaced as `conflict_*` keys, so a reason such as `gpuMemory` can never be confused with the unrelated BOM metric label of the same name.
+- The component list evaluates visibility only for the eight option cards it renders, instead of restating per-category totals; the counts line reports how many options the current search hides.
 
 ## Deployment
 

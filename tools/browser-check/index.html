@@ -1,0 +1,27 @@
+<!doctype html>
+<!--
+  Local browser smoke test. `dist/` is uploaded verbatim by the deploy job, so this lives in
+  tools/ and is staged into dist/ only for the duration of a check:
+
+    node tools/serve.mjs 8123
+    node tools/browser-check/stage.mjs          # copies the check into dist/
+    chrome --headless=new --dump-dom http://127.0.0.1:8123/__browser-check.html > render.html
+    node tools/browser-check/stage.mjs --clean  # removes it again
+
+  The page writes its results into <pre id="browser-check-results"> and sets
+  document.title to BROWSER-CHECK-READY.
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>browser check</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content">skip</a>
+<div id="app"><p class="loading" role="status">loading…</p></div>
+<noscript>needs js</noscript>
+<script type="module" src="./app.js"></script>
+<script type="module" src="./__browser-check.js"></script>
+</body>
+</html>
