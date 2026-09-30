@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "status": "needs_review",
+  "full_qualification": false,
+  "model": {
+    "id": "msa-2060",
+    "name": "HPE MSA 2060",
+    "short": "2060",
+    "family": "msa",
+    "access": "block",
+    "access_modes": [
+      "block"
+    ],
+    "qs_id": "16615",
+    "lifecycle": "active_in_snapshot",
+    "lifecycle_basis": "QuickSpecs document status; model availability and entitlement require confirmation.",
+    "evidence": [
+      {
+        "qs_id": "16615",
+        "version": 25,
+        "sha256": "0b3692098a451018fc64ad48bc765ec9f1f1bc602a5359474bac9c87bf00c87a",
+        "start": 0,
+        "end": 112,
+        "quote": "HPE MSA 2060 Storage Array Overview Have feedback on QuickSpecs? We're listening HPE MSA 2060 Storage Array Quic",
+        "url": null
+      }
+    ]
+  },
+  "configuration": {
+    "schema_version": 1,
+    "model_id": "msa-2060",
+    "host_protocol": "fc",
+    "items": [
+      {
+        "option_id": "16615:R0Q74B",
+        "quantity": 1
+      },
+      {
+        "option_id": "16615:R0Q47A",
+        "quantity": 8
+      }
+    ],
+    "diskGroups": [
+      {
+        "option_id": "16615:R0Q47A",
+        "disks": 8,
+        "spares": 0,
+        "raid": "6",
+        "location": "base"
+      }
+    ]
+  },
+  "requirements": {
+    "purposes": [
+      "primary"
+    ],
+    "access": "block",
+    "workload": "virtualization",
+    "protocol": "fc",
+    "availability": "standard",
+    "budgetTier": "value",
+    "lifecycle": "active",
+    "usableTB": 6,
+    "annualGrowthPct": 10,
+    "years": 3,
+    "headroomPct": 20,
+    "backupTB": null,
+    "changePct": null,
+    "retentionDays": null,
+    "fullEveryDays": null,
+    "backupWindowHours": null,
+    "rpoMinutes": null,
+    "rtoHours": null,
+    "iops": null,
+    "latencyMs": null,
+    "sequentialMBps": null,
+    "existingLTO": null,
+    "offlineCopy": null,
+    "immutable": null,
+    "backupSoftware": null,
+    "existingModel": null
+  },
+  "capacity": {
+    "usableTB": 11.52,
+    "basis": "raid_estimate",
+    "groups": [
+      {
+        "option_id": "16615:R0Q47A",
+        "disks": 8,
+        "spares": 0,
+        "raid": "6",
+        "location": "base",
+        "status": "estimate",
+        "usableTB": 11.52,
+        "rawTB": 15.36
+      }
+    ],
+    "tape": {
+      "status": "unknown",
+      "nativeTB": null,
+      "slots": null
+    }
+  },
+  "planning": {
+    "primary": {
+      "status": "estimate",
+      "usableTB": 7.986000000000002,
+      "requiredTB": 9.982500000000002,
+      "requiredTiB": 9.079030860448258,
+      "assumptions": {
+        "annualGrowthPct": 10,
+        "years": 3,
+        "headroomPct": 20,
+        "dataReductionRatio": 1
+      },
+      "basis": "Compound growth with free-space reserve; decimal TB; no data reduction credit."
+    },
+    "backup": {
+      "status": "unknown",
+      "retainedTB": null,
+      "requiredTB": null
+    }
+  },
+  "findings": [
+    {
+      "key": "capacity_estimate",
+      "status": "advisory",
+      "message": "Capacity is an estimate before metadata, system reserve and workload overhead.",
+      "evidence": []
+    },
+    {
+      "key": "qualification",
+      "status": "unknown",
+      "message": "Host/OS/HBA, firmware, cabling, licenses and supported topology require technical review.",
+      "evidence": [
+        {
+          "qs_id": "16615",
+          "version": 25,
+          "sha256": "0b3692098a451018fc64ad48bc765ec9f1f1bc602a5359474bac9c87bf00c87a",
+          "start": 0,
+          "end": 112,
+          "quote": "HPE MSA 2060 Storage Array Overview Have feedback on QuickSpecs? We're listening HPE MSA 2060 Storage Array Quic",
+          "url": null
+        }
+      ]
+    },
+    {
+      "key": "performance_unknown",
+      "status": "unknown",
+      "message": "Measured IOPS, latency, throughput and recovery targets require workload validation.",
+      "evidence": []
+    }
+  ],
+  "bom": [
+    {
+      "option_id": "16615:R0Q74B",
+      "sku": "R0Q74B",
+      "description": "HPE MSA 2060 16Gb Fibre Channel SFF Storage",
+      "category": "base",
+      "quantity": 1,
+      "assurance": "source_listed",
+      "evidence": [
+        {
+          "qs_id": "16615",
+          "version": 25,
+          "sha256": "0b3692098a451018fc64ad48bc765ec9f1f1bc602a5359474bac9c87bf00c87a",
+          "start": 1850,
+          "end": 1900,
+          "quote": "HPE MSA 2060 16Gb Fibre Channel SFF Storage R0Q74B",
+          "url": null
+        }
+      ]
+    },
+    {
+      "option_id": "16615:R0Q47A",
+      "sku": "R0Q47A",
+      "description": "HPE MSA 1.92TB SAS 12G Read Intensive SFF (2.5in) M2 3yr Wty SSD",
+      "category": "drive",
+      "quantity": 8,
+      "assurance": "source_listed",
+      "evidence": [
+        {
+          "qs_id": "16615",
+          "version": 25,
+          "sha256": "0b3692098a451018fc64ad48bc765ec9f1f1bc602a5359474bac9c87bf00c87a",
+          "start": 55940,
+          "end": 56011,
+          "quote": "HPE MSA 1.92TB SAS 12G Read Intensive SFF (2.5in) M2 3yr Wty SSD R0Q47A",
+          "url": null
+        }
+      ]
+    }
+  ]
+}

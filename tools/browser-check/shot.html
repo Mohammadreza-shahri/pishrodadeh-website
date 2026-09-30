@@ -8,7 +8,7 @@
 <body>
 <a class="skip-link" href="#main-content">skip</a>
 <div id="app"><p class="loading" role="status">loading…</p></div>
-<script type="module" src="./app.js"></script>
+<script type="module">import {mount} from './app.js';mount({lang:'fa',onHome(){},onLanguage(){},isCurrent:()=>true});</script>
 <script type="module" src="./__shot.js"></script>
 </body>
 </html>

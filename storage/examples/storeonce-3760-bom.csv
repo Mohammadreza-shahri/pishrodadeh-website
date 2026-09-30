@@ -1,0 +1,7 @@
+﻿"SKU","Description","Category","Quantity","Assurance","Technical status"
+"S4P73A","HPE StoreOnce 3760 144TB Base System","base","1","source_listed","needs_review"
+"S4P75A","HPE StoreOnce 3760 144TB Capacity Upgrade Kit","capacity_upgrade","1","source_listed","needs_review"
+"TECHNICAL REVIEW","Host/OS/HBA, firmware, cabling, licenses and supported topology require technical review.","","","","needs_review"
+"FINDING","Host/OS/HBA, firmware, cabling, licenses and supported topology require technical review.","qualification","","unknown","needs_review"
+"FINDING","Measured IOPS, latency, throughput and recovery targets require workload validation.","performance_unknown","","unknown","needs_review"
+"FINDING","Verify retention locks, WORM media, software integration and key management.","immutable_gap","","unknown","needs_review"

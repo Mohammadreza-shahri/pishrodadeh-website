@@ -23,6 +23,7 @@ const BASE_REQUIRED = ['cpu', 'memory', 'storage', 'psu'];
 const app = document.getElementById('app');
 
 let lang = 'fa';
+let host = null;
 let data;
 let state = {...initial(), advisorMode: 'guided'};
 let category = 'cpu';
@@ -457,11 +458,18 @@ function layout() {
   brand.append(logoLink, label);
 
   const actions = el('div', null, 'header-actions');
+  if (host) actions.append(btn(t('changeProduct'), () => {
+    persistState();
+    document.querySelectorAll('.dialog-backdrop').forEach(overlay => closeModal(overlay));
+    modalFactory = null;
+    host.onHome();
+  }, 'ghost'));
   actions.append(tag(t('private'), 'dark'));
   if (state.model_id) actions.append(tag(model().short, 'outline'));
   const language = btn(t('languageSwitch'), () => {
     const focus = focusSnapshot();
     lang = lang === 'fa' ? 'en' : 'fa';
+    host?.onLanguage(lang);
     persistState();
     render();
     restoreFocus(focus);
@@ -1593,15 +1601,25 @@ function render() {
 }
 
 async function start() {
+  const owner = host;
   try {
-    const response = await fetch('./catalog.json');
-    if (!response.ok) throw new Error('Catalog unavailable');
-    data = await response.json();
-    restoreState();
+    if (!data) {
+      const response = await fetch('./catalog.json');
+      if (!response.ok) throw new Error('Catalog unavailable');
+      data = await response.json();
+      restoreState();
+    }
+    if (owner && !owner.isCurrent()) return;
+    if (owner) lang = owner.lang;
     render();
   } catch {
+    if (owner && !owner.isCurrent()) return;
     app.replaceChildren(el('p', t('loadFailed'), 'loading'), btn(t('retry'), start, 'primary'));
   }
 }
 
-start();
+export async function mount(context) {
+  host = context;
+  lang = context.lang;
+  await start();
+}

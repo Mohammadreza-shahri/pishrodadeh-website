@@ -43,7 +43,7 @@ const faBlock = lines((s) => fa[s]);
 const enBlock = lines((s) => en.get(s));
 
 if (!process.argv.includes('--write')) {
-  const i18n = readFileSync(I18N, 'utf8');
+  const i18n = readFileSync(I18N, 'utf8').replace(/\r\n/g, '\n');
   const hasFa = i18n.includes(faBlock);
   const hasEn = i18n.includes(enBlock);
   console.log(`catalog rule suffixes: ${suffixes.length}`);

@@ -1,0 +1,216 @@
+{
+  "schema_version": 1,
+  "status": "needs_review",
+  "full_qualification": false,
+  "model": {
+    "id": "msl-msl2024",
+    "name": "HPE MSL2024",
+    "short": "MSL2024",
+    "family": "msl",
+    "access": "tape",
+    "access_modes": [
+      "tape"
+    ],
+    "qs_id": "17271",
+    "lifecycle": "active_in_snapshot",
+    "lifecycle_basis": "QuickSpecs document status; model availability and entitlement require confirmation.",
+    "evidence": [
+      {
+        "qs_id": "17271",
+        "version": 7,
+        "sha256": "08260c8981156bc81a43c8ac54a1b9eae8f5f265f1bd11fceb75ca1a75a6a230",
+        "start": 0,
+        "end": 119,
+        "quote": "HPE Storage MSL2024 Tape Library Overview Have feedback on QuickSpecs? We're listening HPE Storage MSL2024 Tape Library",
+        "url": "https://www.hpe.com/us/en/collaterals/collateral.a50009239enw.html"
+      }
+    ]
+  },
+  "configuration": {
+    "schema_version": 1,
+    "model_id": "msl-msl2024",
+    "host_protocol": "fc",
+    "items": [
+      {
+        "option_id": "17271:AK379B",
+        "quantity": 1
+      },
+      {
+        "option_id": "17271:R6Q74A",
+        "quantity": 1
+      },
+      {
+        "option_id": "17271:Q2079A",
+        "quantity": 24
+      }
+    ],
+    "diskGroups": []
+  },
+  "requirements": {
+    "purposes": [
+      "archive"
+    ],
+    "access": null,
+    "workload": null,
+    "protocol": null,
+    "availability": null,
+    "budgetTier": null,
+    "lifecycle": null,
+    "usableTB": null,
+    "annualGrowthPct": null,
+    "years": null,
+    "headroomPct": 20,
+    "backupTB": 10,
+    "changePct": 5,
+    "retentionDays": 30,
+    "fullEveryDays": 7,
+    "backupWindowHours": 8,
+    "rpoMinutes": null,
+    "rtoHours": 4,
+    "iops": null,
+    "latencyMs": null,
+    "sequentialMBps": null,
+    "existingLTO": 8,
+    "offlineCopy": true,
+    "immutable": true,
+    "backupSoftware": null,
+    "existingModel": null
+  },
+  "capacity": {
+    "usableTB": null,
+    "basis": "unknown",
+    "groups": [],
+    "tape": {
+      "status": "estimate",
+      "nativeTB": 432,
+      "slots": 24
+    }
+  },
+  "planning": {
+    "primary": {
+      "status": "unknown",
+      "usableTB": null,
+      "requiredTB": null
+    },
+    "backup": {
+      "status": "estimate",
+      "fullCopies": 5,
+      "incrementalCopies": 25,
+      "retainedTB": 62.5,
+      "requiredTB": 78.125,
+      "fullBackupMBps": 347.22222222222223,
+      "dailyIncrementalMBps": 17.36111111111111,
+      "restoreMBps": 694.4444444444445,
+      "assumptions": {
+        "dataReductionRatio": 1,
+        "headroomPct": 20,
+        "schedule": "Periodic retained fulls plus daily incrementals; conservative rolling retention; no synthetic-full or deduplication credit."
+      }
+    }
+  },
+  "findings": [
+    {
+      "key": "tape_capacity",
+      "status": "advisory",
+      "message": "ظرفیت بومی نوار استفاده می‌شود؛ ظرفیت تبلیغاتی فشرده‌شده تضمین‌شده نیست.",
+      "evidence": [
+        {
+          "qs_id": "17271",
+          "version": 7,
+          "sha256": "08260c8981156bc81a43c8ac54a1b9eae8f5f265f1bd11fceb75ca1a75a6a230",
+          "start": 38002,
+          "end": 38054,
+          "quote": "MaximumCapacity Native 432 TB (LTO-9) 288 TB (LTO-8)",
+          "url": "https://www.hpe.com/us/en/collaterals/collateral.a50009239enw.html"
+        }
+      ]
+    },
+    {
+      "key": "qualification",
+      "status": "unknown",
+      "message": "میزبان، سیستم‌عامل، HBA، میان‌افزار، کابل‌کشی، مجوز و توپولوژی پشتیبانی‌شده نیازمند بررسی فنی است.",
+      "evidence": [
+        {
+          "qs_id": "17271",
+          "version": 7,
+          "sha256": "08260c8981156bc81a43c8ac54a1b9eae8f5f265f1bd11fceb75ca1a75a6a230",
+          "start": 0,
+          "end": 119,
+          "quote": "HPE Storage MSL2024 Tape Library Overview Have feedback on QuickSpecs? We're listening HPE Storage MSL2024 Tape Library",
+          "url": "https://www.hpe.com/us/en/collaterals/collateral.a50009239enw.html"
+        }
+      ]
+    },
+    {
+      "key": "performance_unknown",
+      "status": "unknown",
+      "message": "IOPS، تأخیر، توان عملیاتی و اهداف بازیابی به اعتبارسنجی بار کاری نیاز دارند.",
+      "evidence": []
+    },
+    {
+      "key": "immutable_gap",
+      "status": "unknown",
+      "message": "قفل نگهداری، نوار WORM، یکپارچگی نرم‌افزار و مدیریت کلید بررسی شود.",
+      "evidence": []
+    }
+  ],
+  "bom": [
+    {
+      "option_id": "17271:AK379B",
+      "sku": "AK379B",
+      "description": "HPE Storage MSL2024 Gen4 0-drive 24-slot Tape Library",
+      "category": "base",
+      "quantity": 1,
+      "assurance": "source_listed",
+      "evidence": [
+        {
+          "qs_id": "17271",
+          "version": 7,
+          "sha256": "08260c8981156bc81a43c8ac54a1b9eae8f5f265f1bd11fceb75ca1a75a6a230",
+          "start": 18511,
+          "end": 18571,
+          "quote": "HPE Storage MSL2024 Gen4 0-drive 24-slot Tape Library AK379B",
+          "url": "https://www.hpe.com/us/en/collaterals/collateral.a50009239enw.html"
+        }
+      ]
+    },
+    {
+      "option_id": "17271:R6Q74A",
+      "sku": "R6Q74A",
+      "description": "HPE StoreEver MSL LTO-9 Ultrium 45000 Fibre Channel Drive Upgrade Kit",
+      "category": "tape_drive",
+      "quantity": 1,
+      "assurance": "source_listed",
+      "evidence": [
+        {
+          "qs_id": "17271",
+          "version": 7,
+          "sha256": "08260c8981156bc81a43c8ac54a1b9eae8f5f265f1bd11fceb75ca1a75a6a230",
+          "start": 19423,
+          "end": 19499,
+          "quote": "HPE StoreEver MSL LTO-9 Ultrium 45000 Fibre Channel Drive Upgrade Kit R6Q74A",
+          "url": "https://www.hpe.com/us/en/collaterals/collateral.a50009239enw.html"
+        }
+      ]
+    },
+    {
+      "option_id": "17271:Q2079A",
+      "sku": "Q2079A",
+      "description": "HPE LTO-9 Ultrium 45TB RW Data Cartridge",
+      "category": "media",
+      "quantity": 24,
+      "assurance": "source_listed",
+      "evidence": [
+        {
+          "qs_id": "17271",
+          "version": 7,
+          "sha256": "08260c8981156bc81a43c8ac54a1b9eae8f5f265f1bd11fceb75ca1a75a6a230",
+          "start": 29948,
+          "end": 29995,
+          "quote": "HPE LTO-9 Ultrium 45TB RW Data Cartridge Q2079A",
+          "url": "https://www.hpe.com/us/en/collaterals/collateral.a50009239enw.html"
+        }
+      ]
+    }
+  ]
+}

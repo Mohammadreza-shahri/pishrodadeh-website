@@ -1,0 +1,7 @@
+﻿"SKU","Description","Category","Quantity","Assurance","Technical status"
+"R0Q74B","HPE MSA 2060 16Gb Fibre Channel SFF Storage","base","1","source_listed","needs_review"
+"R0Q47A","HPE MSA 1.92TB SAS 12G Read Intensive SFF (2.5in) M2 3yr Wty SSD","drive","8","source_listed","needs_review"
+"TECHNICAL REVIEW","Host/OS/HBA, firmware, cabling, licenses and supported topology require technical review.","","","","needs_review"
+"FINDING","Capacity is an estimate before metadata, system reserve and workload overhead.","capacity_estimate","","advisory","needs_review"
+"FINDING","Host/OS/HBA, firmware, cabling, licenses and supported topology require technical review.","qualification","","unknown","needs_review"
+"FINDING","Measured IOPS, latency, throughput and recovery targets require workload validation.","performance_unknown","","unknown","needs_review"

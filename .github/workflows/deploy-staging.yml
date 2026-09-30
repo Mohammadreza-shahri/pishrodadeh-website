@@ -32,6 +32,12 @@ jobs:
           node --check dist/engine.js
           node --check dist/i18n.js
           node --check dist/quote.js
+          node --check dist/studio.js
+          node --check dist/products.js
+          node --check dist/studio-ui.js
+          node --check dist/storage-ui.js
+          node --check dist/storage/engine.mjs
+          node --check dist/storage/copy.mjs
 
       - name: Run regression tests
         run: |
@@ -40,6 +46,9 @@ jobs:
           node tools/test-equivalence.mjs
           node tools/test-i18n.mjs
           node tools/test-inert-rules.mjs
+          node tools/test-storage.mjs
+          node tools/test-products.mjs
+          node tools/build-storage-assets.mjs --check
 
       - name: Verify generated translation blocks are current
         run: node tools/build-rule-i18n.mjs
