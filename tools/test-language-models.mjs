@@ -73,6 +73,11 @@ assert.match(failedRefresh.stderr, /Fixture source unavailable/);
 assert.equal(await readFile(new URL('../dist/language-models.json', import.meta.url), 'utf8'), before);
 const images = new Set();
 for (const gpu of gpuCatalog.products) {
+  if (!gpu.image) {
+    assert.equal(gpu.generation, 'older');
+    assert(gpu.source.endsWith('.pdf'));
+    continue;
+  }
   assert(gpu.image && !images.has(gpu.image.url), gpu.id);
   images.add(gpu.image.url);
   const image = new URL(gpu.image.url), source = new URL(gpu.image.source);

@@ -3,15 +3,110 @@ import {readFile} from 'node:fs/promises';
 import {initialGPURequirements, validateGPURequirements, estimateGPUMemory,
   gpuCandidates, validateGPUProposal, gpuServerCandidates, gpuAdvisorReport} from '../dist/gpu-advisor.js';
 import {gpuCatalog} from '../dist/gpu-catalog.js';
-import {gpuPurposes, isLanguageWorkload, gpuServerWorkload} from '../dist/gpu-purposes.js';
+import {gpuPurposes, gpuPurposeGroups, isLanguageWorkload, gpuServerWorkload} from '../dist/gpu-purposes.js';
+import {gpuSoftware, gpuWorkloadExamples, softwareForPurpose, selectedSoftware, applySoftwareProfile, examplesForPurpose} from '../dist/gpu-software.js';
 const data = JSON.parse(await readFile(new URL('../dist/catalog.json', import.meta.url), 'utf8'));
 let passed = 0;
 function test(name, action) {action(); passed++; console.log('PASS ' + name);}
 const req = {...initialGPURequirements(), parametersB:8, precision:'16', runtimeGB:4};
 const proposal = {version:1, requirements:req, gpuId:'nvidia-l4'};
+test('Six entry groups cover every supported purpose exactly once', () => {
+  assert.equal(gpuPurposeGroups.length,6);
+  assert.equal(new Set(gpuPurposeGroups.map(group=>group.id)).size,6);
+  assert.deepEqual(gpuPurposeGroups.flatMap(group=>group.purposes).sort(),gpuPurposes.map(purpose=>purpose.id).sort());
+});
+test('Every task has editable workload examples without invented numeric requirements', () => {
+  assert.equal(new Set(gpuWorkloadExamples.map(example=>example.id)).size,gpuWorkloadExamples.length);
+  for (const purpose of gpuPurposes) assert(examplesForPurpose(purpose.id).length>=2);
+  assert.deepEqual(examplesForPurpose('invalid'),[]);
+});
+test('Every non-language purpose has a bounded, official-source software list', () => {
+  assert.equal(new Set(gpuSoftware.map(profile=>profile.id)).size,gpuSoftware.length);
+  for (const purpose of gpuPurposes) assert(softwareForPurpose(purpose.id).length>=2);
+  assert.equal(softwareForPurpose('invalid').length,0);
+  for (const profile of gpuSoftware) {
+    assert.equal(new URL(profile.source).protocol,'https:');
+    assert(profile.name.length<160);
+    assert(profile.purposes.every(id=>gpuPurposes.some(purpose=>purpose.id===id)));
+    for (const useCase of profile.purposes) {
+      const before={...req,useCase,task:'general',measuredGB:50,concurrency:20,replicas:2,condition:'used'};
+      const applied=validateGPURequirements(applySoftwareProfile(before,profile.id));
+      assert.equal(applied.measuredGB,null);assert.equal(applied.runtimeGB,null);
+      assert.equal(applied.workloadDetails,'');assert.equal(applied.concurrency,20);assert.equal(applied.replicas,2);
+      assert.equal(applied.condition,'used');assert.equal(applied.computeType,'unknown');
+      assert.equal(applied.sharing,profile.defaults.sharing||'unknown');
+      assert.equal(selectedSoftware(applied).id,profile.id);
+      assert.equal(estimateGPUMemory(applied).targetGB,null);
+      const report=gpuAdvisorReport(data,applied);
+      assert.equal(report.software_profile.source,profile.source);
+      assert.equal(report.software_profile.status,'application_version_license_and_hardware_unverified');
+      assert.equal(before.measuredGB,50);
+    }
+  }
+});
+test('Software examples are scope-checked and custom text cannot inject evidence', () => {
+  assert.throws(()=>applySoftwareProfile({...req,useCase:'video'},'horizon'));
+  assert.throws(()=>applySoftwareProfile({...req,useCase:'vdi'},'unknown'));
+  assert.equal(selectedSoftware({...req,useCase:'video',softwareName:'Omnissa Horizon · NVIDIA vGPU'}),null);
+  assert.equal(gpuAdvisorReport(data,{...req,task:'general',softwareName:'<img src=x>'}).software_profile,null);
+  assert.equal(gpuAdvisorReport(data,req).software_profile,null);
+});
+test('Legacy generation filters remain valid and every exact variant has capability metadata', () => {
+  assert.equal(gpuCatalog.products.length,14);
+  assert.equal(new Set(gpuCatalog.products.map(product=>product.id)).size,14);
+  assert.equal(gpuCandidates(data,req).length,6);
+  assert.equal(gpuCandidates(data,{...req,generation:'older'}).length,8);
+  assert.equal(gpuCandidates(data,{...req,generation:'all'}).length,14);
+  for (const product of gpuCatalog.products) {
+    assert.deepEqual(Object.keys(product.capabilities).sort(),['fp64','graphics','mig','video']);
+    assert(Object.values(product.capabilities).every(value=>typeof value==='boolean'));
+  }
+});
+test('Legacy PCIe memory and power are exact, not SXM or pooled totals', () => {
+  const expected = {'nvidia-t4':[16,70], 'nvidia-a10':[24,150], 'nvidia-a40':[48,300],
+    'nvidia-a100-pcie-40':[40,250], 'nvidia-a100-pcie-80':[80,300],
+    'nvidia-v100-pcie-16':[16,250], 'nvidia-v100-pcie-32':[32,250], 'nvidia-p40':[24,250]};
+  for (const [id, [memory,watts]] of Object.entries(expected)) {
+    const product=gpuCatalog.products.find(product=>product.id===id);
+    assert.equal(product.memoryGB,memory);assert.equal(product.watts,watts);
+    assert(product.source.startsWith('https://www.nvidia.com/')||product.source.startsWith('https://images.nvidia.com/'));
+    assert.equal(product.hpeSkus.length,0);assert.equal(product.hpePlatforms,undefined);
+  }
+});
+test('Old graphics, scientific and MIG routes use product capabilities', () => {
+  const older={...req,generation:'older',task:'general',useCase:'video'};
+  assert.deepEqual(gpuCandidates(data,older).map(product=>product.id).sort(),
+    ['nvidia-t4','nvidia-a10','nvidia-a40','nvidia-p40'].sort());
+  assert.equal(gpuCandidates(data,{...older,useCase:'hpc',computeType:'fp64'}).length,4);
+  assert.deepEqual(gpuCandidates(data,{...older,useCase:'service',sharing:'mig'}).map(product=>product.id),
+    ['nvidia-a100-pcie-40','nvidia-a100-pcie-80']);
+  assert.throws(()=>validateGPUProposal({...proposal,gpuId:'nvidia-t4'},data));
+  assert.throws(()=>validateGPUProposal({...proposal,gpuId:'nvidia-a100-pcie-40',requirements:{...older,useCase:'vdi'}},data));
+});
+test('Purchase condition is not stock, health or a compatibility guarantee', () => {
+  for (const condition of ['any','new','used','refurbished']) {
+    const requirements={...req,parametersB:4,generation:'older',condition};
+    const report=gpuAdvisorReport(data,requirements,'nvidia-t4');
+    assert.equal(report.selected.condition_requested,condition);
+    assert.equal(report.selected.condition_verified,false);
+    assert.equal(report.selected.generation,'older');
+    assert(report.limitations.includes('conditionUnverified'));
+    assert(report.limitations.includes('olderSoftwareReview'));
+    assert(report.limitations.includes('olderHardwareReview'));
+    assert(report.limitations.includes('hpeUnlisted'));
+    assert.equal(report.servers.length,0);assert.equal(report.source_listed_platforms.length,0);
+    assert.equal(report.status,'technical_review_required');
+    assert.equal(report.estimate.targetGB,14);
+    assert(report.limitations.includes('usedHealthReview'));
+    assert(report.limitations.includes('refurbishedReview'));
+    assert.equal(new Set(report.limitations).size,report.limitations.length);
+  }
+  assert.throws(()=>validateGPURequirements({...req,condition:'certified'}));
+  assert.throws(()=>validateGPURequirements({...req,generation:'Gen10'}));
+});
 test('Legacy language-model requirements migrate without changing estimates or server mapping', () => {
   const legacy = Object.fromEntries(Object.entries(req).filter(([key]) =>
-    !['useCase','task','softwareName','workloadDetails','channels','sharing','computeType'].includes(key)));
+    !['useCase','task','softwareName','workloadDetails','channels','sharing','computeType','generation','condition'].includes(key)));
   assert.deepEqual(validateGPURequirements(legacy), req);
   assert.equal(estimateGPUMemory(legacy).targetGB, 24);
   assert.equal(gpuServerWorkload(validateGPURequirements(legacy)), 'ai_inference');

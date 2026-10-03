@@ -30,6 +30,39 @@ The initial catalog includes L4, L40, L40S, H100 NVL (94 GB per GPU, PCIe), H200
 These are product specifications, not confirmations of stock or HPE qualification.
 NVIDIA source links and the reviewed snapshot date are in `dist/gpu-catalog.js`.
 
+The catalog also includes eight older PCIe variants:
+T4 16GB (70W), A10 24GB (150W, single slot), A40 48GB (300W),
+A100 40GB (250W) and 80GB (300W), V100 16GB and 32GB (250W each),
+and P40 24GB (250W). A100/V100 PCIe variants are not SXM; memory is per
+device, never a pooled total. Discovery no longer asks buyers to choose a generation:
+all fourteen products are screened by workload/capability and memory. Restored GPU
+advisor drafts validate their original selection first, then widen to all generations;
+legacy generation values remain accepted for existing server proposals and reports.
+Older GPUs have no encoded exact HPE ordering-part mappings in this
+catalog and remain standalone/host-review inquiries, not automatic server parts.
+
+Purchase condition is independent of generation. No upfront condition question is
+required: product cards show **New / USED / RF** inquiry labels (or **USED / RF**
+on older products), with an explicit stock/health disclaimer. These are possible
+sales inquiry routes, not verified condition or manufacturer certification.
+Previously saved **Any**, **New**, **Used**, or **Refurbished** preferences remain
+validated and retained in reports and inquiries.
+Used/refurbished inquiries and reports retain memory/load tests, ECC/retired-page
+checks, thermal/connector/repair inspection, seller identity, test/return windows
+and written warranty requirements. Older-card inquiries retain these reviews even
+without a saved condition preference. Refurbishment scope/provider must be documented;
+no manufacturer warranty or lifecycle date is assumed. Condition travels through
+drafts, proposals, WhatsApp and server JSON/CSV exports and never changes memory
+screening or hardware qualification.
+
+Capabilities are recorded per exact product. A100/V100 join FP64 compute routes;
+A100 joins MIG routes, not graphics/encoding routes. T4/A10/A40/P40 join the
+graphics/video shortlist with software/version/codec/license review still required.
+Encoding capability is checked against the official
+[NVIDIA video matrix](https://developer.nvidia.com/video-encode-decode-support-matrix).
+Pascal/Volta/Turing application support, CUDA/driver versions and numerical formats
+must be checked against the actual workload; VRAM alone is not enough.
+
 Model-name suggestions come from the original Meta, Qwen, Google, Mistral,
 DeepSeek, Microsoft and OpenAI publishers on Hugging Face. The static snapshot in
 `dist/language-models.json` combines popular models and recent releases, links to
@@ -60,21 +93,43 @@ linked directly from NVIDIA and the official PNY catalog. Every card uses the sa
 dark frame and contained sizing; original angles and markings are not mirrored or
 altered. Clicking a photo opens its source. External images remain owned/hosted by
 their publishers; failed image loads show a source link instead of a misleading
-placeholder or another GPU.
+placeholder or another GPU. For the older variants without a verified exact
+official photo (A100 80GB, V100 16/32GB and P40), the same frame explicitly
+links to the manufacturer product brief instead of substituting another card.
+Available older PNY photos preserve their original angle; no mirroring is applied.
 
-The GPU advisor starts with eleven use cases: AI/ML, generative AI, VDI,
-rendering, video, computer vision, security analytics, scientific compute,
-data analytics, digital twins and centralized shared GPUs. AI, generative AI and
+The GPU advisor starts with six readable groups: AI, virtual desktops/shared GPUs,
+3D design/simulation, video/image analysis, scientific/engineering compute, and
+data/security analytics. A scoped task selector retains all eleven underlying
+use cases without eleven competing entry tiles. AI, generative AI and
 security offer a separate language-model branch; other workloads ask about the
 application, scene/data or video details, concurrency, sharing method or compute
 precision. Unknown answers stay unknown. Legacy version-1 drafts without purpose
 fields retain their AI/language-model path.
 
+`dist/gpu-software.js` provides 24 scoped software examples and 21 workload
+examples, with official application documentation links and bilingual guidance.
+Horizon/Citrix/vGPU, Blender/Cycles, V-Ray, FFmpeg, DeepStream, PyTorch, RAPIDS,
+GROMACS and others are offered only in relevant task lists. Choosing an explicit
+vGPU/MIG/passthrough profile fills the known sharing method and editable software
+name. Choosing a workload example fills an editable description, not assumed
+memory, user counts, scene sizes or throughput. Scientific precision stays unknown
+until supplied. Unknown/custom applications remain allowed; selecting a preset is
+never software/license/GPU/hypervisor qualification.
+
+Changing software or workload clears stale memory measurements; new measurements
+explicitly supplied in the same submission are retained. Switching task resets
+old software assumptions. Application source metadata is included only for a
+scoped known name, carried to GPU/server JSON, CSV and WhatsApp, and remains
+`application_version_license_and_hardware_unverified`. Language-model publisher
+defaults continue to apply only in the language-model branch.
+
 `dist/gpu-purposes.js` defines this capability shortlist using the linked NVIDIA
 product specifications: graphics/VDI/rendering/twins and video encoding prioritize
 L4/L40/L40S/RTX PRO rather than treating H100/H200 as graphics or encoding cards.
-FP64-heavy scientific compute shortlists H100 NVL/H200 NVL; MIG requests exclude
-non-MIG L4/L40/L40S. These are advisory routes, not software, hypervisor, codec,
+FP64-heavy scientific compute shortlists H100 NVL/H200 NVL and A100/V100;
+MIG requests exclude non-MIG products.
+These are advisory routes, not software, hypervisor, codec,
 profile or license qualification. Vision and image-generation paths can still
 explore compute cards. NVIDIA product pages remain linked from every candidate.
 

@@ -39,6 +39,7 @@ jobs:
           node --check dist/gpu-ui.js
           node --check dist/gpu-advisor.js
           node --check dist/gpu-purposes.js
+          node --check dist/gpu-software.js
           node --check dist/gpu-catalog.js
           node --check dist/gpu-copy.js
           node --check dist/language-models.js

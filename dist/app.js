@@ -1557,7 +1557,8 @@ function exportJSON() {
 
 function gpuRequirementRows(report) {
   const req = report.requirements, copy = gpuStrings[lang];
-  const fields = [[copy.purposeTitle, copy['purpose_' + req.useCase]]];
+  const fields = [[copy.purposeTitle, copy['purpose_' + req.useCase]],
+    [copy.generation, copy['generation_' + req.generation]], [copy.condition, copy['condition_' + req.condition]]];
   if (!isLanguageWorkload(req)) fields.push(
     [copy.softwareName, req.softwareName || copy.unknown],
     [copy.workloadDetails, req.workloadDetails || copy.unknown],
@@ -1567,6 +1568,7 @@ function gpuRequirementRows(report) {
     [copy.concurrency, req.concurrency ?? copy.unknown],
     [copy.measuredGB, req.measuredGB ?? copy.unknown],
   );
+  if (report.software_profile) fields.push([copy.softwareSource, report.software_profile.source]);
   return fields;
 }
 

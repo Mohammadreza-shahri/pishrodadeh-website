@@ -11,23 +11,30 @@ export const gpuPurposes = [
   {id:'twin', questions:['softwareName','workloadDetails','concurrency'], limits:['graphicsReview','applicationReview']},
   {id:'service', questions:['softwareName','workloadDetails','concurrency','sharing'], limits:['virtualizationReview','applicationReview']},
 ];
-const graphics = ['nvidia-l4','nvidia-l40','nvidia-l40s','nvidia-rtx-pro-6000-server'];
-const scientific = ['nvidia-h100-nvl','nvidia-h200-nvl'];
+export const gpuPurposeGroups = [
+  {id:'ai', purposes:['ai','generative']},
+  {id:'desktop', purposes:['vdi','service']},
+  {id:'design', purposes:['render','twin']},
+  {id:'media', purposes:['video','vision']},
+  {id:'compute', purposes:['hpc']},
+  {id:'data', purposes:['analytics','security']},
+];
 export function isLanguageWorkload(requirements) {
   return ['ai','generative','security'].includes(requirements.useCase) && requirements.task === 'llm';
 }
 export function gpuPurposeEligible(requirements, product) {
   if (['vdi','service'].includes(requirements.useCase) && requirements.sharing === 'mig' &&
-      ![...scientific, 'nvidia-rtx-pro-6000-server'].includes(product.id)) return false;
-  if (['vdi','render','twin','video'].includes(requirements.useCase) ||
-      requirements.useCase === 'service' && requirements.sharing === 'vgpu') return graphics.includes(product.id);
-  if (requirements.useCase === 'hpc' && requirements.computeType === 'fp64') return scientific.includes(product.id);
+      !product.capabilities.mig) return false;
+  if (['vdi','render','twin'].includes(requirements.useCase) ||
+      requirements.useCase === 'service' && requirements.sharing === 'vgpu') return product.capabilities.graphics;
+  if (requirements.useCase === 'video') return product.capabilities.video;
+  if (requirements.useCase === 'hpc' && requirements.computeType === 'fp64') return product.capabilities.fp64;
   return true;
 }
 export function gpuPurposePriority(requirements, product) {
-  if (requirements.useCase === 'hpc') return scientific.includes(product.id) ? 0 : 1;
+  if (requirements.useCase === 'hpc') return product.capabilities.fp64 ? 0 : 1;
   if (['video','vision'].includes(requirements.useCase) ||
-      requirements.useCase === 'generative' && requirements.task === 'general') return graphics.includes(product.id) ? 0 : 1;
+      requirements.useCase === 'generative' && requirements.task === 'general') return product.capabilities.graphics ? 0 : 1;
   return 0;
 }
 export function gpuServerWorkload(requirements) {

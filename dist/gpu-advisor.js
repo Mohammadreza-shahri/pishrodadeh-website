@@ -1,13 +1,15 @@
 import {initial, optionCheck, activeFindings, requiredKits} from './engine.js';
 import {gpuCatalog} from './gpu-catalog.js';
 import {gpuPurposes, isLanguageWorkload, gpuPurposeEligible, gpuPurposePriority, gpuServerWorkload} from './gpu-purposes.js';
+import {selectedSoftware} from './gpu-software.js';
 
 export const GPU_WORKLOADS = ['inference', 'finetune', 'training'];
 export const PRECISIONS = ['unknown', '4', '8', '16', '32'];
 export function initialGPURequirements() {
   return {workload:'inference', modelName:'', parametersB:null, precision:'unknown',
     concurrency:null, contextTokens:null, runtimeGB:null, measuredGB:null, replicas:1,
-    useCase:'ai', task:'llm', softwareName:'', workloadDetails:'', channels:null, sharing:'unknown', computeType:'unknown'};
+    useCase:'ai', task:'llm', softwareName:'', workloadDetails:'', channels:null, sharing:'unknown', computeType:'unknown',
+    generation:'current', condition:'any'};
 }
 
 export function validateGPURequirements(value) {
@@ -20,7 +22,9 @@ export function validateGPURequirements(value) {
       /[\u0000-\u001f]/.test(next.modelName)) throw Error('Invalid GPU workload');
   if ((next.useCase !== null && !gpuPurposes.some(purpose => purpose.id === next.useCase)) ||
       !['llm','general'].includes(next.task) || !['unknown','dedicated','vgpu','mig'].includes(next.sharing) ||
-      !['unknown','mixed','fp64'].includes(next.computeType)) throw Error('Invalid GPU purpose');
+      !['unknown','mixed','fp64'].includes(next.computeType) ||
+      !['current','older','all'].includes(next.generation) ||
+      !['any','new','used','refurbished'].includes(next.condition)) throw Error('Invalid GPU purpose');
   if (next.useCase !== null && next.task === 'llm' &&
       !['ai','generative','security'].includes(next.useCase)) throw Error('Language workload does not match GPU purpose');
   for (const key of ['softwareName','workloadDetails']) {
@@ -58,6 +62,9 @@ export function estimateGPUMemory(value) {
     basis = 'weights';
   }
   const unresolved = ['performance', 'software', 'hardware', 'noPooling', 'availability'];
+  unresolved.push('conditionUnverified');
+  if (['used','refurbished'].includes(req.condition)) unresolved.push('usedHealthReview','usedWarrantyReview');
+  if (req.condition === 'refurbished') unresolved.push('refurbishedReview');
   if (req.useCase === null) unresolved.push('purposeUnknown');
   else if (!language) unresolved.push(...gpuPurposes.find(purpose => purpose.id === req.useCase).limits);
   if (['vdi','service'].includes(req.useCase) && req.sharing === 'mig') unresolved.push('sharingReview');
@@ -76,7 +83,9 @@ export function gpuCandidates(data, requirements) {
   const req = validateGPURequirements(requirements);
   if (!req.useCase) throw Error('GPU purpose must be selected before product screening');
   const estimate = estimateGPUMemory(req);
-  return gpuCatalog.products.filter(product => gpuPurposeEligible(req, product)).map(product => ({
+  return gpuCatalog.products.filter(product =>
+    (req.generation === 'all' || (product.generation || 'current') === req.generation) &&
+    gpuPurposeEligible(req, product)).map(product => ({
     ...product, usableGB:product.memoryGB,
     options:data.options.filter(option => option.category === 'gpu' && product.hpeSkus.includes(option.sku) &&
       option.attributes.vram_gb === product.memoryGB && option.evidence?.length),
@@ -129,12 +138,18 @@ export function gpuAdvisorReport(data, requirements, gpuId = null) {
   const selected = gpuId ? candidates.find(candidate => candidate.id === gpuId) : null;
   if (gpuId && (!selected || selected.fit === 'insufficient' || selected.usableGB === null)) throw Error('Invalid GPU report selection');
   const proposal = selected ? {version:1, requirements:validated, gpuId} : null;
+  const software = !isLanguageWorkload(validated) ? selectedSoftware(validated) : null;
   return {schema:'ariaman-gpu-advisor', version:1, catalog_version:data.version, nvidia_catalog_version:gpuCatalog.version,
     status:'technical_review_required', requirements:validated, estimate,
     routing:{purpose:validated.useCase, language_model:isLanguageWorkload(validated),
       server_workload:gpuServerWorkload(validated), status:'capability_shortlist_not_software_qualification'},
-    selected: selected ? {gpu_id:gpuId, name:selected.name, quantity:validated.replicas, memory_per_device_gb:selected.usableGB, source:selected.source} : null,
+    software_profile:software ? {id:software.id, name:software.name, source:software.source,
+      status:'application_version_license_and_hardware_unverified'} : null,
+    selected: selected ? {gpu_id:gpuId, name:selected.name, quantity:validated.replicas,
+      condition_requested:validated.condition, condition_verified:false,
+      generation:selected.generation || 'current', memory_per_device_gb:selected.usableGB, source:selected.source} : null,
     candidates:candidates.map(candidate => ({gpu_id:candidate.id, name:candidate.name, source:candidate.source,
+      generation:candidate.generation || 'current', condition_verified:false,
       memory_per_device_gb:candidate.usableGB, capacity_fit:candidate.fit,
       evidence:candidate.options.map(option => ({model_id:option.model_id, evidence:option.evidence}))})),
     servers:proposal ? gpuServerCandidates(data, proposal).map(candidate => ({
@@ -148,7 +163,8 @@ export function gpuAdvisorReport(data, requirements, gpuId = null) {
       ...platform, status:'technical_review_required', configurable:false,
       quantity:validated.replicas, quantity_verified:false,
     })),
-    limitations:[...estimate.unresolved, ...(selected?.layout === 'nvl' ? ['nvlNote'] : []),
+    limitations:[...new Set([...estimate.unresolved, ...(selected?.layout === 'nvl' ? ['nvlNote'] : []),
+      ...(selected?.generation === 'older' ? ['olderSoftwareReview','olderHardwareReview','usedHealthReview','usedWarrantyReview','refurbishedReview'] : []),
       ...(selected?.hpePlatforms?.length ? ['hpePlatformReview'] : []),
-      ...(selected && !selected.options.length && !selected.hpePlatforms?.length ? ['hpeUnlisted'] : [])]};
+      ...(selected && !selected.options.length && !selected.hpePlatforms?.length ? ['hpeUnlisted'] : [])])]};
 }

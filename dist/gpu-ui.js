@@ -6,14 +6,15 @@ import {strings as serverStrings} from './i18n.js';
 import {officialProductPages} from './server-links.js';
 import {salesWhatsApp} from './sales-contact.js';
 import {validateLanguageModels, applyLanguageModel} from './language-models.js';
-import {gpuPurposes, isLanguageWorkload} from './gpu-purposes.js';
+import {gpuPurposes, gpuPurposeGroups, isLanguageWorkload} from './gpu-purposes.js';
+import {softwareForPurpose, selectedSoftware, applySoftwareProfile, examplesForPurpose} from './gpu-software.js';
 import {el, button, shell, focusHeading} from './studio-ui.js';
 
 const KEY = 'aria-gpu-advisor-v1';
 let host, data, lang = 'fa', notice = '', standalone = false;
 let languageModels = null, modelCatalogFailed = false;
 let state = fresh();
-function fresh() { return {version:1, step:0, requirements:{...initialGPURequirements(), useCase:null}, gpuId:null}; }
+function fresh() { return {version:1, step:0, requirements:{...initialGPURequirements(), generation:'all', useCase:null}, gpuId:null}; }
 const t = key => strings[lang][key];
 const number = value => new Intl.NumberFormat(lang === 'fa' ? 'fa-IR' : 'en-US', {maximumFractionDigits:2}).format(value);
 const memory = value => value === null ? t('unknown') : `${number(value)} GB`;
@@ -29,9 +30,10 @@ function restore() {
     if (!saved || saved.version !== 1 || ![0, 1, 2].includes(saved.step) ||
         Object.keys(saved).some(key => !['version', 'step', 'requirements', 'gpuId'].includes(key)) ||
         saved.step === 2 && !saved.gpuId) throw Error('Invalid GPU draft');
-    const requirements = validateGPURequirements(saved.requirements);
+    const original = validateGPURequirements(saved.requirements);
+    const requirements = {...original, generation:'all'};
     if (!requirements.useCase && saved.step !== 0) throw Error('GPU draft has no selected purpose');
-    const gpuId = saved.gpuId === null ? null : validateGPUProposal({version:1, requirements, gpuId:saved.gpuId}, data).gpuId;
+    const gpuId = saved.gpuId === null ? null : validateGPUProposal({version:1, requirements:original, gpuId:saved.gpuId}, data).gpuId;
     state = {version:1, step:saved.step, requirements, gpuId};
     notice = 'restored';
   } catch (error) {
@@ -119,7 +121,15 @@ function inputField(key, {max = 10000, min = 1, step = 1, hint = null, type = 'n
     if (!input.checkValidity()) {input.reportValidity(); return;}
     const value = type === 'number' ? input.value === '' ? null : Number(input.value) : input.value.trim();
     try {
-      state.requirements = validateGPURequirements(resetChangedModel({...state.requirements, [key]:value}));
+      const changedWorkload = key === 'workloadDetails' && value !== state.requirements.workloadDetails;
+      state.requirements = validateGPURequirements(resetChangedModel({...state.requirements, [key]:value,
+        ...(changedWorkload ? {runtimeGB:null, measuredGB:null} : {})}));
+      if (changedWorkload) {
+        for (const name of ['runtimeGB','measuredGB']) {
+          const control = document.getElementById(`gpu-${name}`);
+          if (control) control.value = '';
+        }
+      }
       if (key === 'modelName') {
         for (const name of ['parametersB', 'runtimeGB', 'measuredGB', 'precision', 'contextTokens']) {
           const control = document.getElementById(`gpu-${name}`);
@@ -149,14 +159,15 @@ function purposePage(main) {
   const section = el('section', null, 'gpu-purpose-section');
   section.append(el('h2', t('purposeTitle')), el('p', t('purposeLead'), 'muted'));
   const grid = el('div', null, 'gpu-purpose-grid');
-  for (const purpose of gpuPurposes) {
+  for (const group of gpuPurposeGroups) {
     const choice = button('', () => {
-      state.requirements = {...initialGPURequirements(), useCase:purpose.id,
-        task:purpose.id === 'ai' ? 'llm' : 'general'};
+      const useCase = group.purposes[0];
+      state.requirements = {...initialGPURequirements(), generation:'all', useCase,
+        task:useCase === 'ai' ? 'llm' : 'general'};
       state.gpuId = null; notice = ''; render(); focusHeading();
     }, 'gpu-purpose');
-    choice.dataset.gpuPurpose = purpose.id;
-    choice.append(el('strong', t('purpose_' + purpose.id)), el('span', t('purpose_' + purpose.id + 'Hint')));
+    choice.dataset.gpuGroup = group.id;
+    choice.append(el('strong', t('group_' + group.id)), el('span', t('group_' + group.id + 'Hint')));
     grid.append(choice);
   }
   section.append(grid); main.append(section);
@@ -166,7 +177,7 @@ function selectField(key, choices, hint, onChange = null) {
   label.append(el('span', t(key), 'field-label'));
   const select = el('select'); select.id = `gpu-${key}`; select.name = key;
   for (const value of choices) {
-    const option = el('option', t(key + '_' + value)); option.value = value; select.append(option);
+    const option = el('option', t(key === 'useCase' ? 'purpose_' + value : key + '_' + value)); option.value = value; select.append(option);
   }
   select.value = state.requirements[key];
   select.onchange = () => {
@@ -180,19 +191,26 @@ function selectField(key, choices, hint, onChange = null) {
 }
 function needsPage(main) {
   const purpose = gpuPurposes.find(purpose => purpose.id === state.requirements.useCase);
+  const group = gpuPurposeGroups.find(group => group.purposes.includes(purpose.id));
   const language = isLanguageWorkload(state.requirements);
   const summary = el('div', null, 'gpu-purpose-summary');
   const changePurpose = button(t('changePurpose'), () => {
     state = fresh(); notice = ''; render(); focusHeading();
   });
   changePurpose.dataset.gpuChangePurpose = '';
-  summary.append(el('strong', t('purpose_' + purpose.id)), changePurpose);
+  summary.append(el('strong', t('group_' + group.id)), changePurpose);
   main.append(summary);
   const form = el('form', null, 'gpu-discovery');
+  if (group.purposes.length > 1) form.append(selectField('useCase', group.purposes, 'useCaseHint', () => {
+    const {useCase, replicas, condition} = state.requirements;
+    state.requirements = {...initialGPURequirements(), generation:'all', useCase, replicas, condition,
+      task:useCase === 'ai' ? 'llm' : 'general'};
+  }));
   if (['ai','generative','security'].includes(purpose.id)) {
     form.append(selectField('task', ['llm','general'], 'taskHint', () => {
       state.requirements = {...state.requirements, modelName:'', parametersB:null, precision:'unknown',
-        contextTokens:null, runtimeGB:null, measuredGB:null};
+        contextTokens:null, runtimeGB:null, measuredGB:null, softwareName:'', workloadDetails:'',
+        sharing:'unknown', computeType:'unknown'};
     }));
   }
   form.append(el('p', t(language ? 'languageRoute' : 'route_' + purpose.id), 'gpu-route-note'));
@@ -233,8 +251,11 @@ function needsPage(main) {
     for (const key of purpose.questions) {
       if (key === 'sharing') fields.append(selectField(key, ['unknown','dedicated','vgpu','mig'], 'sharingHint'));
       else if (key === 'computeType') fields.append(selectField(key, ['unknown','mixed','fp64'], 'computeHint'));
-      else fields.append(inputField(key, {type:['softwareName','workloadDetails'].includes(key) ? 'text' : 'number',
-        hint:['video','vision'].includes(purpose.id) && key === 'workloadDetails' ? 'videoDetailsHint' : key + 'Hint'}));
+      else if (key === 'softwareName') fields.append(softwareField());
+      else if (key === 'workloadDetails') fields.append(workloadField(purpose));
+      else {
+        fields.append(inputField(key, {hint:key + 'Hint'}));
+      }
     }
   }
   form.append(fields);
@@ -256,6 +277,15 @@ function needsPage(main) {
         answers[input.name] = input.type === 'number'
           ? input.value === '' ? null : Number(input.value) : input.value.trim();
       }
+      if (!language && (answers.softwareName !== state.requirements.softwareName ||
+          answers.workloadDetails !== state.requirements.workloadDetails)) {
+        if (answers.runtimeGB === state.requirements.runtimeGB) answers.runtimeGB = null;
+        if (answers.measuredGB === state.requirements.measuredGB) answers.measuredGB = null;
+      }
+      if (!language && answers.softwareName !== state.requirements.softwareName) {
+        if (answers.sharing === state.requirements.sharing) answers.sharing = 'unknown';
+        if (answers.computeType === state.requirements.computeType) answers.computeType = 'unknown';
+      }
       state.requirements = validateGPURequirements(resetChangedModel(answers));
       notice = ''; state.gpuId = null; go(1);
     } catch (error) {
@@ -264,6 +294,94 @@ function needsPage(main) {
     }
   };
   main.append(form);
+  if (!language) renderSoftwareSource();
+}
+function renderSoftwareSource() {
+  const status = document.getElementById('gpu-software-source');
+  if (!status) return;
+  status.replaceChildren();
+  const item = selectedSoftware(state.requirements);
+  const select = document.getElementById('gpu-softwarePreset');
+  if (select) select.value = item?.id || '';
+  if (!item) {
+    status.append(el('p', t('softwareCustomNote'), 'small muted')); return;
+  }
+  const link = el('a', t('softwareSource'));
+  link.href = item.source; link.target = '_blank'; link.rel = 'noopener noreferrer';
+  status.append(el('p', t('guide_' + item.guide), 'small muted'), link,
+    el('p', t('softwareUnverified'), 'small muted'));
+}
+function workloadField(purpose) {
+  const field = el('div', null, 'field');
+  const label = el('label', null, 'field');
+  label.append(el('span', t('workloadExample'), 'field-label'));
+  const select = el('select'); select.id = 'gpu-workloadExample';
+  const custom = el('option', t('exampleCustom')); custom.value = ''; select.append(custom);
+  for (const example of examplesForPurpose(purpose.id)) {
+    const option = el('option', t('example_' + example.id)); option.value = example.id; select.append(option);
+    if (['fa','en'].some(locale => strings[locale]['example_' + example.id] === state.requirements.workloadDetails)) {
+      option.selected = true;
+    }
+  }
+  select.onchange = () => {
+    const example = examplesForPurpose(purpose.id).find(item => item.id === select.value);
+    if (!example && select.value) {
+      console.warn('Invalid GPU workload example'); notice = 'invalid'; render(); return;
+    }
+    state.requirements = {...state.requirements, workloadDetails:example ? t('example_' + example.id) : '',
+      runtimeGB:null, measuredGB:null};
+    state.gpuId = null; persist(); render(); document.getElementById('gpu-workloadExample').focus();
+  };
+  label.append(select);
+  const customField = inputField('workloadDetails', {type:'text',
+    hint:['video','vision'].includes(purpose.id) ? 'videoDetailsHint' : 'workloadDetailsHint'});
+  const item = selectedSoftware(state.requirements);
+  if (item) customField.querySelector('input').placeholder = t('guide_' + item.guide);
+  field.append(label, customField); return field;
+}
+function softwareField() {
+  const field = el('div', null, 'field gpu-software-field');
+  const label = el('label', null, 'field');
+  label.append(el('span', t('softwarePreset'), 'field-label'));
+  const select = el('select'); select.id = 'gpu-softwarePreset';
+  const custom = el('option', t('softwareCustom')); custom.value = ''; select.append(custom);
+  for (const item of softwareForPurpose(state.requirements.useCase)) {
+    const option = el('option', item.name); option.value = item.id; select.append(option);
+  }
+  select.value = selectedSoftware(state.requirements)?.id || '';
+  select.onchange = () => {
+    if (select.value && select.value === selectedSoftware(state.requirements)?.id) return;
+    try {
+      state.requirements = select.value
+        ? validateGPURequirements(applySoftwareProfile(state.requirements, select.value))
+        : {...state.requirements, softwareName:'', workloadDetails:'', measuredGB:null, runtimeGB:null,
+          sharing:'unknown', computeType:'unknown'};
+      state.gpuId = null; persist(); render();
+      document.getElementById('gpu-softwarePreset').focus();
+    } catch (error) {
+      console.warn('Invalid GPU software profile', error); notice = 'invalid'; render();
+    }
+  };
+  label.append(select, el('small', t('softwarePresetHint'), 'field-hint'));
+  const customField = inputField('softwareName', {type:'text', hint:'softwareNameHint'});
+  const input = customField.querySelector('input');
+  const status = el('div'); status.id = 'gpu-software-source'; status.setAttribute('aria-live', 'polite');
+  field.append(label, customField, status);
+  input.onchange = () => {
+    if (!input.checkValidity()) {input.reportValidity(); return;}
+    const value = input.value.trim();
+    try {
+      if (value !== state.requirements.softwareName) {
+        state.requirements = validateGPURequirements({...state.requirements, softwareName:value,
+          runtimeGB:null, measuredGB:null, sharing:'unknown', computeType:'unknown'});
+        state.gpuId = null; persist(); render(); document.getElementById('gpu-softwareName').focus();
+      }
+    } catch (error) {
+      console.warn('Invalid GPU application name', error);
+      input.setCustomValidity(t('invalid')); input.reportValidity();
+    }
+  };
+  return field;
 }
 function modelField() {
   const label = inputField('modelName', {type:'text', hint:'modelNameHint'});
@@ -304,6 +422,11 @@ function modelField() {
 }
 function gpuPhoto(candidate) {
   const frame = el('div', null, 'gpu-photo');
+  if (!candidate.image) {
+    const source = el('a', t('photoUnavailable'), 'gpu-photo-failed');
+    source.href = candidate.source; source.target = '_blank'; source.rel = 'noopener noreferrer';
+    frame.append(source); return frame;
+  }
   const source = el('a'); source.href = candidate.image.source;
   source.target = '_blank'; source.rel = 'noopener noreferrer'; source.title = t('photoSource');
   const image = el('img'); image.alt = candidate.name;
@@ -349,8 +472,15 @@ function resultsPage(main) {
   overview.append(el('h2', t('planning')));
   const language = isLanguageWorkload(state.requirements);
   overview.append(el('p', `${t('purpose_' + state.requirements.useCase)} · ${t(language ? 'languageRoute' : 'route_' + state.requirements.useCase)}`, 'gpu-route-note'));
+  overview.append(el('p', t('productConditionNote'), 'gpu-purchase-summary small muted'));
   if (language && state.requirements.modelName) overview.append(el('p', state.requirements.modelName, 'gpu-model-name'));
   if (!language && state.requirements.softwareName) overview.append(el('p', state.requirements.softwareName, 'gpu-model-name'));
+  const software = !language ? selectedSoftware(state.requirements) : null;
+  if (software) {
+    const source = el('a', t('softwareSource'));
+    source.href = software.source; source.target = '_blank'; source.rel = 'noopener noreferrer';
+    overview.append(source, el('p', t('softwareUnverified'), 'small muted'));
+  }
   const metrics = el('div', null, 'gpu-metrics');
   for (const [label, value] of [['weights', estimate.weightsGB], ['target', estimate.targetGB]]) {
     if (!language && label === 'weights') continue;
@@ -386,6 +516,10 @@ function resultsPage(main) {
     card.append(gpuPhoto(candidate));
     const name = el('h2', candidate.name); name.dir = 'ltr'; name.translate = false;
     card.append(name, el('small', t(candidate.layout)));
+    card.append(el('span', t(candidate.generation === 'older' ? 'usedProductLabel' : 'productConditionLabel'), 'chip outline'));
+    if (candidate.generation === 'older') {
+      card.append(el('span', t('olderGeneration'), 'chip outline'), el('p', t('olderSoftwareReview'), 'small muted'));
+    }
     if (first?.id === candidate.id) card.append(el('span', '★ ' + t('first'), 'chip good'));
     card.append(el('strong', memory(candidate.usableGB)), el('small', t('perDevice')),
       el('span', t(candidate.fit === 'unknown' ? 'unknownFit' : candidate.fit), 'chip ' + (candidate.fit === 'insufficient' ? 'red' : 'outline')));
@@ -435,6 +569,8 @@ function quoteURL() {
   const req = report.requirements, selected = report.selected;
   const lines = [t('quoteTitle'), selected?.name || t('unknown'), `${t('quantity')}: ${number(req.replicas)}`,
     `${t('purposeTitle')}: ${t('purpose_' + req.useCase)}`,
+    `${t('generation')}: ${t('generation_' + req.generation)}`,
+    `${t('condition')}: ${t('condition_' + req.condition)}`,
     ...(isLanguageWorkload(req) ? [
       `${t('needs')}: ${t(req.workload)}`, req.modelName ? `${t('modelName')}: ${req.modelName}` : null,
       `${t('parametersB')}: ${req.parametersB === null ? t('unknown') : number(req.parametersB)}`,
@@ -450,6 +586,9 @@ function quoteURL() {
     ]),
     `${t('concurrency')}: ${req.concurrency === null ? t('unknown') : number(req.concurrency)}`,
     `${t('measuredGB')}: ${memory(req.measuredGB)}`,
+    ...(report.software_profile ? [
+      `${t('softwareSource')}: ${report.software_profile.source}`, t('softwareUnverified'),
+    ] : []),
     `${t('target')}: ${memory(report.estimate.targetGB)}`, t('limitations'),
     ...report.limitations.map(key => '- ' + t(key)), selected?.source,
     ...report.source_listed_platforms.map(platform => `${platform.name} · ${platform.sku} · ${t('review')} · ${platform.source}`),
