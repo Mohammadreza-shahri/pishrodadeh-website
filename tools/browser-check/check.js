@@ -78,7 +78,10 @@ try {
   if (findButton) findButton.click();
   await sleep(200);
   const serverCards = all('.server-card');
-  ok('server comparison renders cards', serverCards.length >= 3, serverCards.length);
+  ok('server comparison renders all nine platforms', serverCards.length === 9, serverCards.length);
+  ok('Gen12 server titles show their own generation', serverCards.filter(c=>c.querySelector('.server-title')?.textContent.includes('Gen12')).length===2);
+  const dl580=serverCards.find(c=>c.querySelector('.server-code')?.textContent.includes('DL580'));
+  ok('DL580 reports 4U and four CPU sockets',dl580?.querySelector('.server-facts')?.textContent.includes('4U')&&dl580?.querySelectorAll('.fact strong')[1]?.textContent==='۴');
   ok('candidates ranked by fit', Boolean(q('.server-card.recommended, .server-card')), serverCards.length);
   ok('recommendation has an icon', Boolean(q('.server-card.recommended .server-top .icon')));
   ok('all model titles use separate LTR rows', all('.server-title').every(title => getComputedStyle(title).direction === 'ltr' && getComputedStyle(title).flexDirection === 'column'));
@@ -256,6 +259,28 @@ try {
 } catch (error) {
   ok('harness completed without throwing', false, `${error && error.message} :: ${error && error.stack}`);
 }
+
+// Exercise restored drafts and component/review rendering for every new platform in both locales.
+try {
+  const catalog=await fetch('./catalog.json').then(r=>r.json());
+  const {initial}=await import('./engine.js');
+  for(const id of ['17118','16305','17105','17119','17258'])for(const language of ['en','fa']){
+    const model=catalog.models.find(m=>m.id===id);
+    const draft={...initial(),model_id:id,chassis:model.chassis[0],cpuQty:model.cpu_counts[0],memoryQty:Math.min(8,model.dimms),step:3};
+    localStorage.setItem('aria-configurator-v3',JSON.stringify({version:1,lang:language,category:'cpu',state:draft}));
+    const {mount}=await import('./app.js?extension-test='+id+'-'+language);
+    await mount({lang:language,onHome(){},onLanguage(){},isCurrent:()=>true});
+    const cpuControl=q('.component-tools input[type="number"]');
+    ok(model.short+' '+language+' renders correct CPU limits',cpuControl?.max===String(model.sockets)&&cpuControl?.min===String(model.cpu_counts[0]));
+    ok(model.short+' '+language+' lists CPU options',all('.part-card').length>0);
+    const memory=all('.category-link').find(b=>b.textContent.includes(language==='en'?'Memory':'حافظه'));
+    memory?.click();
+    ok(model.short+' '+language+' renders correct DIMM limit',q('.component-tools input[type="number"]')?.max===String(model.dimms));
+    all('.stepper button')[3]?.click();
+    ok(model.short+' '+language+' renders technical review',Boolean(q('.review-grid')));
+    ok(model.short+' '+language+' has no horizontal overflow',document.documentElement.scrollWidth<=innerWidth+1);
+  }
+} catch(error){ok('new server browser flows complete',false,error.stack);}
 
 const payload = { url: location.href, results };
 window.scrollTo({top:0,behavior:'instant'});

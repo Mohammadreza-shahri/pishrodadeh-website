@@ -4,6 +4,11 @@ A Persian-first, bilingual static configurator for HPE server planning. The site
 
 The deployable application stays in `dist/` and can be hosted from any static web server.
 
+The server catalog includes DL360 Gen11, DL380 Gen11, ML350 Gen11, DL380a Gen11,
+ML30 Gen11, ML110 Gen11, ML350 Gen12, DL20 Gen11 and DL580 Gen12.
+See [server extension coverage and source versions](docs/server-extension.md) for
+encoded conditions, reproducible source snapshots and unresolved qualification checks.
+
 ## What is in scope
 
 The configurator helps enterprise IT buyers, infrastructure engineers, and procurement teams move through this flow:
@@ -58,6 +63,7 @@ node --check dist/engine.js
 node --check dist/i18n.js
 node --check dist/quote.js
 node tools/test-engine.mjs
+node tools/test-server-extension.mjs
 node tools/test-quote.mjs
 node tools/test-equivalence.mjs
 node tools/test-i18n.mjs

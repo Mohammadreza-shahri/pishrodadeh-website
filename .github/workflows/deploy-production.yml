@@ -51,6 +51,7 @@ jobs:
       - name: Run regression tests
         run: |
           node tools/test-engine.mjs
+          node tools/test-server-extension.mjs
           node tools/test-quote.mjs
           node tools/test-equivalence.mjs
           node tools/test-i18n.mjs

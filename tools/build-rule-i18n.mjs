@@ -64,7 +64,7 @@ function installRuleBlock(source, anchorLine, block) {
   const lines = source.split(/\r?\n/);
   const anchor = lines.findIndex((l) => l.trimStart().startsWith(anchorLine));
   if (anchor < 0) throw new Error(`anchor not found: ${anchorLine}`);
-  const isRuleLine = (l) => /^ {4}rule_[A-Za-z_][\w]*: /.test(l);
+  const isRuleLine = (l) => /^ {4}rule_\w+: /.test(l);
   let end = anchor;
   while (end + 1 < lines.length && isRuleLine(lines[end + 1])) end += 1;
   return [...lines.slice(0, anchor + 1), ...block.split('\n'), ...lines.slice(end + 1)].join('\n');

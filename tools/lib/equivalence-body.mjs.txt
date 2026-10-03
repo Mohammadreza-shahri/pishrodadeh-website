@@ -37,6 +37,7 @@ function referenceOptionCheck(s, o) {
     gpu: ['features.gpu_'],
     riser: ['features.secondary', 'features.tertiary', 'features.pcie'],
     psu: ['features.psu_', 'power.'],
+    nic: ['features.nic_'],
     backplane: ['chassis', 'features.rear_'],
     cooling: ['features.high_performance_fans'],
     kits: [],
