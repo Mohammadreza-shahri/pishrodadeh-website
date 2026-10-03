@@ -799,3 +799,32 @@ body{background-color:var(--bg);background-image:linear-gradient(rgba(22,43,58,.
   .hero-hardware-item{min-width:0}
   .check-row{flex-wrap:wrap}
 }
+
+.brand-logo img,.product-shell .brand-logo img{filter:none;mix-blend-mode:normal;background:transparent;padding:0;border-radius:0}
+.brand-logo::after{display:none}
+.brand-reset{flex:none;white-space:nowrap;margin-inline-start:8px}
+.brand-copy{min-width:140px}
+.brand-copy small{letter-spacing:0}
+.hero-manufacturer text{fill:#162b3a;font:700 17px Arial,sans-serif;direction:ltr;unicode-bidi:isolate}
+.server-title{display:flex;flex-direction:column;align-items:flex-start;gap:6px;direction:ltr;text-align:left}
+.server-title .server-code{line-height:1.3}
+.server-title .small{letter-spacing:.04em;line-height:1.5}
+.server-top .chip>.icon{width:20px;height:20px;background:transparent;border-radius:0;color:inherit}
+.server-top .chip>.icon svg{width:18px;height:18px}
+.advisor-fields{grid-template-columns:repeat(3,minmax(0,1fr));align-items:start;gap:12px 18px}
+.advisor-field{min-width:0;padding-block:8px}
+.advisor-field>.field{display:grid;grid-template-columns:minmax(0,1fr) 104px;gap:10px;align-items:center}
+.advisor-field input{width:100%;min-height:44px;padding:8px 10px}
+.field-help{margin-top:6px}
+.field-help>summary{font-size:12px;color:var(--blue)}
+.field-help .field-hint{display:block;margin-top:6px}
+[lang=fa] body{font-family:Vazirmatn,Tahoma,"Segoe UI",Arial,sans-serif}
+[lang=fa] .fact strong,[lang=fa] .summary-metric strong,[lang=fa] .status-card strong,[lang=fa] .issue-card strong,[lang=fa] .step span,[lang=fa] .count,[lang=fa] input[type=number],[lang=fa] .qty,[lang=fa] .storage-metric strong{font-family:Vazirmatn,Tahoma,sans-serif;font-variant-numeric:tabular-nums}
+@media(max-width:1100px){.advisor-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:820px){
+  .brand{display:grid;grid-template-columns:96px minmax(0,1fr);gap:8px 12px}
+  .brand-copy{min-width:0}
+  .brand-reset{grid-column:1/-1;justify-self:start;margin-inline-start:0;max-width:100%;white-space:normal}
+  .brand-copy small{display:block;font-size:11px;line-height:1.7}
+}
+@media(max-width:600px){.advisor-fields{grid-template-columns:minmax(0,1fr);gap:4px}.advisor-field>.field{grid-template-columns:minmax(0,1fr) 92px}.advisor-field .field-label{font-size:13px}}

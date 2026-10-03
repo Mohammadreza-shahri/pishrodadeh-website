@@ -13,7 +13,7 @@
 .product-card .button{margin-top:12px}
 .product-footer{padding-block:26px;color:#667a8d;font-size:12px;border-top:1px solid #dce5ec}
 .product-shell .header-actions{flex-wrap:wrap}
-.product-shell .brand-logo img{filter:none;mix-blend-mode:normal;background:white;border-radius:6px;padding:4px}
+.product-shell .brand-logo img{filter:none;mix-blend-mode:normal;background:transparent;padding:0}
 .storage-main h2{font-size:23px;margin:28px 0 14px}
 .storage-main h3{line-height:1.65}
 .storage-main .muted{color:#596d82;line-height:1.9}

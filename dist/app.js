@@ -70,6 +70,7 @@ const icons = {
   issue: 'M12 2v12 M12 18h.01 M5 5l14 14',
   good: 'M5 12l5 5L20 7',
   summary: 'M4 5h16 M4 12h16 M4 19h10',
+  recommended: 'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',
 };
 
 /* Rule prose lives in i18n.js as `rule_<suffix>` keys so both locales stay reviewable in one
@@ -433,13 +434,29 @@ function heroServerGraphic() {
   line.setAttribute('d', 'M96 44h82l24-25h92l24 25h106');
   line.setAttribute('class', 'hero-tech-line');
   svg.append(line);
+  const manufacturer = document.createElementNS(svg.namespaceURI, 'g');
+  manufacturer.setAttribute('class', 'hero-manufacturer');
+  const mark = document.createElementNS(svg.namespaceURI, 'rect');
+  mark.setAttribute('x', '402');
+  mark.setAttribute('y', '80');
+  mark.setAttribute('width', '43');
+  mark.setAttribute('height', '11');
+  mark.setAttribute('fill', 'none');
+  mark.setAttribute('stroke', '#00765a');
+  mark.setAttribute('stroke-width', '3');
+  const name = document.createElementNS(svg.namespaceURI, 'text');
+  name.setAttribute('x', '403');
+  name.setAttribute('y', '111');
+  name.textContent = 'HPE';
+  manufacturer.append(mark, name);
+  svg.append(manufacturer);
   const hardware = el('div', null, 'hero-hardware');
   for (const cat of ['cpu', 'memory', 'storage', 'gpu']) {
     const item = el('span', null, 'hero-hardware-item');
     item.append(icon(cat), el('span', t(cat)));
     hardware.append(item);
   }
-  figure.append(svg, hardware, el('figcaption', t('heroGraphicCaption')));
+  figure.append(svg, hardware);
   return figure;
 }
 
@@ -490,13 +507,7 @@ function layout() {
   const startLink = el('a', t('heroStart'), 'button primary hero-start');
   startLink.href = '#main-content';
   introCopy.append(startLink);
-  const introStatus = el('div', null, 'hero-status');
-  introStatus.append(
-    metricCard(number(data.models.length), t('platformsLabel'), t('sourceBackedMetric')),
-    metricCard(number(data.options.length), t('sourceOptionsLabel'), t('sourceLinkedMetric')),
-    metricCard(number(data.rules.length), t('rulesLabel'), t('coverageMetric')),
-  );
-  intro.append(introCopy, heroServerGraphic(), introStatus);
+  intro.append(introCopy, heroServerGraphic());
 
   const main = el('main');
   main.id = 'main-content';
@@ -533,8 +544,8 @@ function layout() {
     showMobileSummary = false;
     clearPersistedState();
     render();
-  }, 'ghost');
-  actions.append(reset);
+  }, 'ghost brand-reset');
+  brand.append(reset);
   footerLinks.append(coverage);
   footer.append(footerLinks);
 
@@ -543,12 +554,6 @@ function layout() {
   app.append(shell);
   renderToastNotice();
   return content;
-}
-
-function metricCard(value, label, hint) {
-  const card = el('div', null, 'hero-card');
-  card.append(el('strong', value), el('span', label), el('small', hint));
-  return card;
 }
 
 function leadBlock(title, copy) {
@@ -690,6 +695,19 @@ function workPage(root) {
       }, {resetList: false}), {hint: t(state.workload.startsWith('ai') ? 'gpuTargetHint' : 'storageTargetHint')}),
     );
   }
+  for (const [index, label] of [...fields.children].entries()) {
+    const wrapper = el('div', null, 'advisor-field');
+    const hint = label.querySelector('.field-hint');
+    label.replaceWith(wrapper);
+    wrapper.append(label);
+    if (hint) {
+      const help = el('details', null, 'field-help');
+      hint.id = `advisor-hint-${index}`;
+      label.querySelector('input,select').setAttribute('aria-describedby', hint.id);
+      help.append(el('summary', t('fieldHelp')), hint);
+      wrapper.append(help);
+    }
+  }
   advisor.append(fields, callout(t('assumptionsTitle'), t('assumptionsBody'), 'info'));
   root.append(advisor);
 
@@ -783,7 +801,9 @@ function serversPage(root) {
     const narrative = serverNarrative(entry);
     const card = el('article', null, `server-card ${index === 0 && !entry.blockers.length ? 'recommended' : ''} ${current ? 'selected' : ''}`.trim());
     const top = el('div', null, 'server-top');
-    top.append(tag(entry.blockers.length ? t('targetExceeds') : index === 0 ? t('recommended') : t('alternative'), entry.blockers.length ? 'red' : 'blue'));
+    const rank = tag(entry.blockers.length ? t('targetExceeds') : index === 0 ? t('recommended') : t('alternative'), entry.blockers.length ? 'red' : 'blue');
+    if (index === 0 && !entry.blockers.length) rank.prepend(icon('recommended'));
+    top.append(rank);
     if (current) top.append(tag(t('selectedServer'), 'good'));
     card.append(top);
     const title = el('div', null, 'server-title');

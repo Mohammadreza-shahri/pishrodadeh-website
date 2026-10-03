@@ -12,14 +12,15 @@
 - Cards, panels, and dialogs share rounded corners, subtle borders, and shallow shadows.
 
 ## Typography
-- Use a robust local/system fallback stack (`Tahoma`, `Segoe UI`, `Arial`, `Inter`) with Persian-first defaults.
+- Use bundled Vazirmatn for Persian text and numbers, with robust local/system fallbacks (`Tahoma`, `Segoe UI`, `Arial`, `Inter`).
 - Headings carry the hierarchy; technical identifiers use LTR monospace or Arial-style rendering to avoid bidi ambiguity.
 
 ## Components
 - **Workload cards:** plain-language entry points with consistent iconography and state badges.
-- **Product hero:** a lightweight, explicitly illustrative rack-server SVG with hardware icons, a jump link to the current configuration step, and a compact catalog metrics strip.
-- **Advisor panels:** guided profiles plus editable sizing inputs.
-- **Server comparison cards:** use compact, non-product-specific chassis diagrams and show why a platform is relevant, tradeoffs, blockers, and source evidence before selection.
+- **Header:** transparent Ariaman logo and company name (Pishro Dadeh Iranian Parseh); restart sits beside the brand text on desktop and below it on mobile, in both configurators.
+- **Product hero:** a lightweight, accessible illustrative rack-server SVG identifying HPE, with hardware icons and a jump link to the current step; no internal catalog counts or decorative caption.
+- **Advisor panels:** guided profiles plus compact label/input rows and expandable help, preserving the full guidance and accessible descriptions.
+- **Server comparison cards:** model and generation labels stay isolated LTR on separate lines. A star marks the top recommendation, not verified compatibility. Compact chassis diagrams accompany platform tradeoffs, blockers, and source evidence before selection.
 - **Category navigation:** expose required/selected/problem states per component group.
 - Server category navigation and its Next action show controller before drives, without changing engine category definitions. Server and storage Start over actions live in the header and retain their confirmation dialogs.
 - **Part cards:** pair technical identifiers with plain-language summaries and source-backed state chips.

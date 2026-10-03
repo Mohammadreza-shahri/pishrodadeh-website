@@ -1,6 +1,6 @@
 export const copy = {
   fa: {
-    title:'استودیوی پیکربندی تجهیزات', brand:'آریامن', tagline:'انتخاب آگاهانه، پیکربندی دقیق',
+    title:'استودیوی پیکربندی تجهیزات', brand:'آریامن', tagline:'پیشرو داده ایرانیان پارسه',
     choose:'چه تجهیزاتی را می‌خواهید پیکربندی کنید؟',
     lead:'ابتدا نوع محصول را انتخاب کنید. سپس نیازهای خود را مشخص کنید و قطعات و گزارش فنی را بررسی کنید.',
     servers:'سرور', storage:'ذخیره‌سازی',
@@ -12,7 +12,7 @@ export const copy = {
     private:'ذخیره پیش‌نویس در همین مرورگر', future:'هر سازنده مسیر پیکربندی و کاتالوگ مخصوص خود را دارد.',
   },
   en: {
-    title:'Equipment Configuration Studio', brand:'ARIAMAN', tagline:'Informed selection. Precise configuration.',
+    title:'Equipment Configuration Studio', brand:'ARIAMAN', tagline:'Pishro Dadeh Iranian Parseh',
     choose:'What would you like to configure?',
     lead:'Choose a product type, describe your needs, then review the parts and technical report.',
     servers:'Server', storage:'Storage',

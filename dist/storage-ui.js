@@ -55,10 +55,10 @@ function render(){
     lang=value;host.onLanguage(value);render();
   }},t('title'),t('lead'));
   main.classList.add('storage-main');
-  main.closest('.shell').querySelector('.header-actions').append(button(t('reset'),()=>{
+  main.closest('.shell').querySelector('.brand').append(button(t('reset'),()=>{
     if(!window.confirm(t('resetConfirm')))return;
     state=fresh();notice='';category='base';role='';family='';go(0);
-  }));
+  },'ghost brand-reset'));
   const nav=el('nav',null,'storage-stepper');nav.setAttribute('aria-label',t('title'));
   steps.forEach((key,index)=>{
     const node=button(number(index+1)+' · '+t(key),()=>go(index),index===state.step?'primary':'ghost');

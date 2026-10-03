@@ -23,7 +23,7 @@ const clickByText = (sel, needle) => {
 const checkHeader = name => {
   const brand = q('.brand-copy');
   const header = q('.site-header');
-  const actions = all('.header-actions button');
+  const actions = all('.site-header button');
   const bounds = header.getBoundingClientRect();
   ok(`${name}: brand has readable width`, brand.getBoundingClientRect().width >= 100, brand.getBoundingClientRect().width);
   ok(`${name}: controls stay inside header`, actions.every(button => {
@@ -41,15 +41,32 @@ try {
   // 1. App boots and the catalog loads.
   for (let i = 0; i < 60 && !q('.stepper'); i += 1) await sleep(150);
   ok('app boots (shell rendered)', Boolean(q('.stepper')), text('.hero h1'));
-  ok('catalog loaded (platform metrics)', Boolean(q('.hero-status')), text('.hero-status'));
+  ok('hero omits internal catalog statistics', !q('.hero-status'));
+  ok('hero omits decorative caption', !q('.hero-server-visual figcaption'));
+  ok('hero identifies HPE hardware', text('.hero-manufacturer').includes('HPE'));
   ok('persian is the default language', document.documentElement.lang === 'fa' && document.documentElement.dir === 'rtl', `${document.documentElement.lang}/${document.documentElement.dir}`);
   ok('page title localized', document.title.includes('آریامن'), document.title);
   ok('brand tagline rendered from the dictionary', text('.brand-copy small').length > 0, text('.brand-copy small'));
+  ok('company identity accompanies Ariaman brand', text('.brand-copy small') === 'پیشرو داده ایرانیان پارسه' && text('.brand-copy strong').includes('آریامن'));
+  await document.fonts.ready;
+  ok('local Persian font is available', document.fonts.check('700 20px Vazirmatn'));
+  const logoStyle = getComputedStyle(q('.brand-logo img'));
+  ok('logo retains color without opaque CSS background', logoStyle.filter === 'none' && logoStyle.backgroundColor === 'rgba(0, 0, 0, 0)');
   checkHeader('server configurator');
 
   // 2. Step 1 — workload selection.
   const workloadCards = all('.workload-card');
   ok('six workload cards render', workloadCards.length === 6, workloadCards.length);
+  ok('advisor numeric fields use compact disclosure', all('.advisor-field').length > 0 && all('.advisor-field .field-help').length === all('.advisor-field').length);
+  ok('numeric controls stay compact and touch sized', all('.advisor-field input').every(input => {
+    const rect = input.getBoundingClientRect();
+    return rect.width <= 108 && rect.height >= 44;
+  }));
+  ok('closed sizing rows avoid excess vertical space', all('.advisor-field').every(field => field.getBoundingClientRect().height <= 105));
+  const sizingHelp = q('.field-help');
+  sizingHelp.querySelector('summary').click();
+  ok('full sizing help is available on demand', sizingHelp.open && sizingHelp.querySelector('.field-hint').getBoundingClientRect().height > 0);
+  sizingHelp.querySelector('summary').click();
   const storageCard = workloadCards.find((c) => c.textContent.includes('ذخیره‌سازی و پشتیبان‌گیری'));
   ok('storage workload card shows the workload label, not the category label', Boolean(storageCard), workloadCards.map((c) => c.querySelector('h3')?.textContent ?? '?').join(' | '));
   workloadCards[0].click();
@@ -63,6 +80,9 @@ try {
   const serverCards = all('.server-card');
   ok('server comparison renders cards', serverCards.length >= 3, serverCards.length);
   ok('candidates ranked by fit', Boolean(q('.server-card.recommended, .server-card')), serverCards.length);
+  ok('recommendation has an icon', Boolean(q('.server-card.recommended .server-top .icon')));
+  ok('all model titles use separate LTR rows', all('.server-title').every(title => getComputedStyle(title).direction === 'ltr' && getComputedStyle(title).flexDirection === 'column'));
+  ok('Persian fact numerals use bundled Vazirmatn', getComputedStyle(q('.fact strong')).fontFamily.includes('Vazirmatn'));
 
   const select = all('.server-card .server-actions button').find((b) => !b.disabled);
   if (select) select.click();
@@ -73,7 +93,7 @@ try {
   const catButtons = all('.category-link');
   ok('all categories listed', catButtons.length >= 11, catButtons.length);
   ok('controller appears before drives', catButtons.findIndex(b=>b.textContent.includes('کنترلر')) < catButtons.findIndex(b=>b.textContent.includes('ذخیره‌سازی')&&!b.textContent.includes('کنترلر')));
-  ok('server start over is in header', Boolean(all('.header-actions button').find(b=>b.textContent.includes('شروع دوباره'))));
+  ok('server start over is beside brand text', Boolean(all('.brand button').find(b=>b.textContent.includes('شروع دوباره'))));
   checkHeader('server components');
 
   const storageBtn = catButtons.find((b) => b.textContent.includes('ذخیره‌سازی'));
