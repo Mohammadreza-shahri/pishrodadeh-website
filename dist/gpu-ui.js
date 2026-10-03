@@ -199,7 +199,7 @@ function sourceDetails(options) {
       const quote = el('blockquote', evidence.quote); quote.dir = 'ltr'; quote.translate = false;
       section.append(el('small', `QuickSpecs ${evidence.qs_id} · v${evidence.version} · ${option.sku}`), quote);
     }
-    const link = el('a', t('manufacturerPage')); link.href = officialProductPages[model.id];
+    const link = el('a', t('manufacturerPage')); link.href = officialProductPages[model.id] || 'https://www.hpe.com/us/en/servers.html';
     link.target = '_blank'; link.rel = 'noopener noreferrer'; section.append(link);
     details.append(section);
   }

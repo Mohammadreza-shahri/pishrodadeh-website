@@ -147,3 +147,13 @@ ones, so they can still fire legitimately and were deliberately left out.
 These gaps are the reason the interface keeps unresolved states visible instead of claiming
 complete compatibility. Closing them is catalog work — populating the facts — and must never be
 done by turning the affected rules into passes.
+
+## Bulletin Gen11 / Gen12 extension
+
+See [server-extension.md](server-extension.md) for five added platforms, source versions,
+encoded rules and qualification limits. Source hashes/evidence, imports, platform limits and
+kit quantities pass `tools/test-server-extension.mjs`. The original four-platform reference
+passed 225,060 state/option pairs before the deliberate extension reference refresh.
+Desktop (1440 x 1000) and mobile (390 x 844) each passed 130 browser checks, including every
+new model's CPU controls, DIMM controls and review in Persian and English. These checks do
+not independently certify HPE compatibility or validate physical installation conditions.

@@ -1,0 +1,112 @@
+[
+  {
+    "id": "17118",
+    "model": "ML30 Gen11",
+    "version": 27,
+    "sha256": "4cf7c0be8996a2ddf57e975110a38c1a0a274473962d14893a16691fe4052742",
+    "source": "docs/server-sources/17118.txt",
+    "counts": {
+      "cpu": 18,
+      "memory": 4,
+      "storage": 39,
+      "controller": 3,
+      "psu": 3,
+      "gpu": 2,
+      "backplane": 0,
+      "riser": 0,
+      "cooling": 2,
+      "nic": 8,
+      "hba": 0,
+      "kits": 10
+    },
+    "rules": 20
+  },
+  {
+    "id": "16305",
+    "model": "ML110 Gen11",
+    "version": 40,
+    "sha256": "c3b9f7e36340b9c56eb99f65a07b890b037e13b3d53bd9509eae7fc80032d9b4",
+    "source": "docs/server-sources/16305.txt",
+    "counts": {
+      "cpu": 11,
+      "memory": 7,
+      "storage": 59,
+      "controller": 6,
+      "psu": 4,
+      "gpu": 2,
+      "backplane": 3,
+      "riser": 2,
+      "cooling": 1,
+      "nic": 18,
+      "hba": 0,
+      "kits": 12
+    },
+    "rules": 22
+  },
+  {
+    "id": "17105",
+    "model": "ML350 Gen12",
+    "version": 17,
+    "sha256": "849aa4aafcf64481ac1e291950acff5dfd1170324fd8f04850cb0e800e3d325e",
+    "source": "docs/server-sources/17105.txt",
+    "counts": {
+      "cpu": 18,
+      "memory": 5,
+      "storage": 144,
+      "controller": 7,
+      "psu": 4,
+      "gpu": 5,
+      "backplane": 4,
+      "riser": 4,
+      "cooling": 5,
+      "nic": 17,
+      "hba": 4,
+      "kits": 32
+    },
+    "rules": 31
+  },
+  {
+    "id": "17119",
+    "model": "DL20 Gen11",
+    "version": 29,
+    "sha256": "9066b12d242d806804a709797c78936ef727b2fcd84c319ed3316adbf18d88b4",
+    "source": "docs/server-sources/17119.txt",
+    "counts": {
+      "cpu": 10,
+      "memory": 4,
+      "storage": 91,
+      "controller": 3,
+      "psu": 3,
+      "gpu": 2,
+      "backplane": 0,
+      "riser": 0,
+      "cooling": 0,
+      "nic": 15,
+      "hba": 0,
+      "kits": 18
+    },
+    "rules": 19
+  },
+  {
+    "id": "17258",
+    "model": "DL580 Gen12",
+    "version": 12,
+    "sha256": "91d400e9daaffc56545bee04f6da0cdc6b99af60d543359ef866793151b0d6f0",
+    "source": "docs/server-sources/17258.txt",
+    "counts": {
+      "cpu": 7,
+      "memory": 4,
+      "storage": 104,
+      "controller": 7,
+      "psu": 3,
+      "gpu": 0,
+      "backplane": 4,
+      "riser": 1,
+      "cooling": 1,
+      "nic": 21,
+      "hba": 4,
+      "kits": 51
+    },
+    "rules": 16
+  }
+]

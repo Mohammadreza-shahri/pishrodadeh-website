@@ -13,7 +13,7 @@ export function shell(lang, {onHome,onLanguage}, title, lead) {
   const t=copy[lang], app=document.getElementById('app');
   document.documentElement.lang=lang;
   document.documentElement.dir=lang==='fa'?'rtl':'ltr';
-  document.title='ARIA | '+title;
+  document.title=t.brand+' | '+title;
   const root=el('div',null,'shell product-shell'), header=el('header',null,'site-header');
   const brand=el('div',null,'brand'), logo=el('a',null,'brand-logo'), img=el('img');
   logo.href='https://aria-man.com/'; logo.target='_blank'; logo.rel='noreferrer';

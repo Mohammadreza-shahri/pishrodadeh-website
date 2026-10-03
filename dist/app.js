@@ -748,7 +748,7 @@ function serverNarrative(entry) {
 
 function chassisGraphic(entry) {
   const figure = el('figure', null, `chassis chassis-${entry.id}`);
-  figure.setAttribute('aria-label', `${entry.name}: ${entry.id === '16912' ? t('tower') : `${entry.rack_u || (entry.id === '16910' ? 1 : 2)}U`}`);
+  figure.setAttribute('aria-label', `${entry.name}: ${entry.form_factor === 'tower' ? t('tower') : `${entry.rack_u}U`}`);
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', '0 0 320 92');
   svg.setAttribute('role', 'img');
@@ -756,29 +756,29 @@ function chassisGraphic(entry) {
   title.textContent = t('illustrativeChassis');
   svg.append(title);
   const body = document.createElementNS(svg.namespaceURI, 'rect');
-  body.setAttribute('x', entry.id === '16912' ? '102' : '12');
-  body.setAttribute('y', entry.id === '16912' ? '5' : entry.id === '16910' ? '27' : '14');
-  body.setAttribute('width', entry.id === '16912' ? '116' : '296');
-  body.setAttribute('height', entry.id === '16912' ? '82' : entry.id === '16910' ? '38' : '64');
+  body.setAttribute('x', entry.form_factor === 'tower' ? '102' : '12');
+  body.setAttribute('y', entry.form_factor === 'tower' ? '5' : entry.rack_u === 1 ? '27' : '14');
+  body.setAttribute('width', entry.form_factor === 'tower' ? '116' : '296');
+  body.setAttribute('height', entry.form_factor === 'tower' ? '82' : entry.rack_u === 1 ? '38' : '64');
   body.setAttribute('rx', '7');
   body.setAttribute('class', 'chassis-body');
   svg.append(body);
-  const bays = entry.id === '16912' ? 4 : entry.id === '16913' ? 6 : 8;
+  const bays = entry.form_factor === 'tower' ? 4 : entry.id === '16913' ? 6 : 8;
   for (let index = 0; index < bays; index += 1) {
     const bay = document.createElementNS(svg.namespaceURI, 'rect');
-    const tower = entry.id === '16912';
+    const tower = entry.form_factor === 'tower';
     bay.setAttribute('x', String((tower ? 114 : 25) + (tower ? index % 2 : index) * (tower ? 45 : 25)));
-    bay.setAttribute('y', String((tower ? 18 + Math.floor(index / 2) * 30 : entry.id === '16910' ? 38 : 27)));
+    bay.setAttribute('y', String((tower ? 18 + Math.floor(index / 2) * 30 : entry.rack_u === 1 ? 38 : 27)));
     bay.setAttribute('width', tower ? '32' : '17');
-    bay.setAttribute('height', tower ? '20' : entry.id === '16910' ? '16' : '34');
+    bay.setAttribute('height', tower ? '20' : entry.rack_u === 1 ? '16' : '34');
     bay.setAttribute('rx', '2');
     bay.setAttribute('class', 'chassis-bay');
     svg.append(bay);
   }
   const vent = document.createElementNS(svg.namespaceURI, 'circle');
-  vent.setAttribute('cx', entry.id === '16912' ? '193' : '282');
+  vent.setAttribute('cx', entry.form_factor === 'tower' ? '193' : '282');
   vent.setAttribute('cy', '46');
-  vent.setAttribute('r', entry.id === '16910' ? '9' : '17');
+  vent.setAttribute('r', entry.rack_u === 1 ? '9' : '17');
   vent.setAttribute('class', 'chassis-vent');
   svg.append(vent);
   figure.append(svg, el('figcaption', t('illustrativeOnly')));
@@ -823,15 +823,15 @@ function serversPage(root) {
     if (current) top.append(tag(t('selectedServer'), 'good'));
     card.append(top);
     const title = el('div', null, 'server-title');
-    title.append(bidi(entry.short.replace(' Gen11', ''), 'server-code'), bidi('HPE ProLiant · Gen11', 'muted small'));
+    title.append(bidi(entry.short.replace(/ Gen1[12]$/, ''), 'server-code'), bidi(`HPE ProLiant · Gen${entry.generation || 11}`, 'muted small'));
     card.append(title, chassisGraphic(entry));
 
     const facts = el('div', null, 'server-facts');
     for (const [value, label] of [
-      [entry.id === '16912' ? t('tower') : entry.id === '16910' ? '1U' : '2U', t('height')],
-      [number(2), t('socket')],
+      [entry.form_factor === 'tower' ? t('tower') : `${entry.rack_u}U`, t('height')],
+      [number(entry.sockets || 2), t('socket')],
       [number(entry.dimms), t('dimms')],
-      [t(entry.id === '16913' ? 'gpuFocus' : entry.id === '16910' ? 'density' : entry.id === '16912' ? 'office' : 'expansion'), t('focus')],
+      [t(entry.id === '16913' ? 'gpuFocus' : entry.rack_u === 1 ? 'density' : entry.form_factor === 'tower' ? 'office' : 'expansion'), t('focus')],
     ]) {
       const fact = el('div', null, 'fact');
       fact.append(el('strong', value), el('small', label));
@@ -885,8 +885,8 @@ function chooseModel(entry) {
       chassis: entry.chassis[0],
       selected: gpu ? {gpu:[gpu.option.sku]} : {},
       extraQty: {},
-      cpuQty: entry.id === '16913' ? 2 : 1,
-      memoryQty: 8,
+      cpuQty: entry.cpu_counts?.[0] || (entry.id === '16913' ? 2 : 1),
+      memoryQty: Math.min(8, entry.dimms),
       gpuQty: gpu ? gpuProposal.requirements.replicas : 1,
       psuQty: entry.id === '16913' ? 4 : 2,
       step: 3,
@@ -902,7 +902,7 @@ function partTitle(option) {
   const attrs = option.attributes;
   switch (option.category) {
     case 'cpu':
-      return `Intel Xeon ${attrs.model} · ${attrs.cores} ${t('coresUnit')}`;
+      return `${attrs.brand || 'Intel Xeon'} ${attrs.model} · ${attrs.cores} ${t('coresUnit')}`;
     case 'memory':
       return `${attrs.capacity_gb} GB · DDR5-${attrs.speed_mts} · ${attrs.type || 'DIMM'}`;
     case 'storage':
@@ -932,10 +932,14 @@ function issueState() {
   const findings = activeFindings(state, data).map(item => ({...item, message: ruleText(item)}));
   const missing = [];
   const missingActions = [];
-  const missingKeys = {cpu: 'missingCPU', memory: 'missingMemory', storage: 'missingStorage', psu: 'missingPSU'};
-  for (const required of BASE_REQUIRED) if (!chosen(required)) {
+  const missingKeys = {cpu: 'missingCPU', memory: 'missingMemory', storage: 'missingStorage', psu: 'missingPSU', backplane: 'missingBackplane'};
+  for (const required of [...BASE_REQUIRED, ...(model()?.requires_backplane ? ['backplane'] : [])]) if (!chosen(required)) {
     missing.push(t(missingKeys[required]));
     missingActions.push(required);
+  }
+  if (model()?.requires_nic && !chosen('nic')) {
+    missing.push(t('missingNIC'));
+    missingActions.push('nic');
   }
   if (state.model_id === '16913' && !chosen('gpu')) {
     missing.push(t('missingGPU'));
@@ -967,7 +971,9 @@ function issueState() {
 function changeQuantity(key, value) {
   withRender(() => {
     const next = Math.round(value);
-    if (next < 1 || next > 128) return;
+    if (!Number.isFinite(next) || next < 1 || next > 128) return;
+    if (key === 'cpuQty' && model().cpu_counts && !model().cpu_counts.includes(next)) return;
+    if (key === 'memoryQty' && next > model().dimms) return;
     state[key] = next;
   }, {announce: t('quantityUpdated')});
 }
@@ -979,7 +985,7 @@ function categoryStatus(cat, issues) {
   const hasIssue = issues.direct.some(item => item.category === cat) || issues.findings.some(item => item.domain === cat);
   if (hiddenCurrent || hasIssue) return 'warning';
   if (selected) return 'done';
-  if (BASE_REQUIRED.includes(cat) || (cat === 'gpu' && state.model_id === '16913')) return 'required';
+  if (BASE_REQUIRED.includes(cat) || (cat === 'gpu' && state.model_id === '16913') || (cat === 'nic' && model()?.requires_nic) || (cat === 'backplane' && model()?.requires_backplane)) return 'required';
   return 'idle';
 }
 
@@ -1072,7 +1078,9 @@ function renderParts(root, issues) {
   const quantityKey = {cpu: 'cpuQty', memory: 'memoryQty', storage: 'driveQty', gpu: 'gpuQty', psu: 'psuQty'}[category];
   if (quantityKey) {
     tools.append(field(t('qty'), state[quantityKey], value => changeQuantity(quantityKey, value), {
-      max: category === 'cpu' ? 2 : category === 'psu' ? 4 : category === 'gpu' ? 8 : 128,
+      min: category === 'cpu' ? model().cpu_counts?.[0] || 1 : 1,
+      step: category === 'cpu' && model().id === '17258' ? 2 : 1,
+      max: category === 'cpu' ? model().sockets || 2 : category === 'memory' ? model().dimms : category === 'psu' ? model().psu_slots || 4 : category === 'gpu' ? 8 : 128,
       hint: t('quantityNote'),
     }));
   }
@@ -1085,7 +1093,7 @@ function renderParts(root, issues) {
       hint: t('raidHint'),
     }));
   }
-  if (!['cpu', 'memory', 'storage', 'psu'].includes(category) && !(category === 'gpu' && state.model_id === '16913')) {
+  if (!(category === 'backplane' && model()?.requires_backplane) && !(category === 'nic' && model()?.requires_nic) && !['cpu', 'memory', 'storage', 'psu'].includes(category) && !(category === 'gpu' && state.model_id === '16913')) {
     top.append(el('p', t('optional'), 'small muted'));
   }
   root.append(top);
@@ -1535,7 +1543,7 @@ function exportPayload() {
 }
 
 function exportJSON() {
-  download(`ARIA-${model().short.replaceAll(' ', '-')}.json`, JSON.stringify(exportPayload(), null, 2), 'application/json');
+  download(`ARIAMAN-${model().short.replaceAll(' ', '-')}.json`, JSON.stringify(exportPayload(), null, 2), 'application/json');
 }
 
 function shareWhatsApp(contact) {
@@ -1585,7 +1593,7 @@ function exportCSV() {
       ...gpuReport.limitations.map(key => [t('gpuProposalTitle'), gpuStrings[lang][key], '', '', t('reviewRequired')]),
     ] : []),
   ];
-  download('ARIA-HPE-BOM.csv', `\ufeff${rows.map(row => row.map(safe).join(',')).join('\r\n')}`, 'text/csv;charset=utf-8');
+  download('ARIAMAN-HPE-BOM.csv', `\ufeff${rows.map(row => row.map(safe).join(',')).join('\r\n')}`, 'text/csv;charset=utf-8');
 }
 
 function sanitizeDraft(savedState) {

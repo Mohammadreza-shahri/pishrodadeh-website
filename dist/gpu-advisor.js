@@ -93,7 +93,7 @@ export function gpuServerCandidates(data, value) {
     const trial = {...initial(), model_id:model.id, chassis:model.chassis[0],
       workload:proposal.requirements.workload === 'inference' ? 'ai_inference' : 'ai_training',
       gpuQty:proposal.requirements.replicas, selected:{gpu:[option.sku]},
-      cpuQty:model.id === '16913' ? 2 : 1,
+      cpuQty:model.cpu_counts?.[0] || (model.id === '16913' ? 2 : 1),
       requirements:{...initial().requirements, gpuGB:option.attributes.vram_gb}};
     const check = optionCheck(trial, data, option);
     const findings = activeFindings(trial, data);

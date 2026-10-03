@@ -61,9 +61,9 @@ test('Independent NVIDIA catalog includes GPUs not listed by HPE', () => {
 });
 test('HPE proposals use exact source-backed ordering parts and model scope', () => {
   const servers = gpuServerCandidates(data, proposal);
-  assert.equal(servers.length, 4);
+  assert.deepEqual(servers.map(item => item.model.id).sort(), ['16305','16910','16911','16912','16913','17105']);
   assert(servers.every(item => item.option.model_id === item.model.id && item.option.sku === 'S0K89C' && item.option.evidence.length));
-  assert.equal(gpuServerCandidates(data, {...proposal, gpuId:'nvidia-l40s'}).length, 3);
+  assert.deepEqual(gpuServerCandidates(data, {...proposal, gpuId:'nvidia-l40s'}).map(item => item.model.id).sort(), ['16911','16912','16913','17105']);
   assert(!gpuServerCandidates(data, {...proposal, gpuId:'nvidia-l40s'}).some(item => item.model.id === '16910'));
   assert(gpuServerCandidates(data, {...proposal, gpuId:'nvidia-l40s'}).every(item => item.status !== 'verified'));
 });
