@@ -9,6 +9,7 @@ const ok = (name, pass, detail = '') => results.push({ name, pass: Boolean(pass)
 // The app restores language and build from localStorage; start every run from a clean slate so
 // the checks describe the app's real default state rather than a previous run's leftovers.
 try { localStorage.clear(); } catch { /* storage may be unavailable */ }
+await import('./studio.js');
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const q = (sel) => document.querySelector(sel);
@@ -35,7 +36,7 @@ const checkHeader = name => {
 
 try {
   for (let i=0;i<60&&!q('[data-product-type="servers"]');i++)await sleep(100);
-  ok('product chooser opens first',all('[data-product-type]').length===2);
+  ok('product chooser opens first with server, storage and GPU',all('[data-product-type]').length===3);
   checkHeader('product chooser');
   q('[data-product-type="servers"] button').click();
   // 1. App boots and the catalog loads.
@@ -252,6 +253,95 @@ try {
   q('[data-product-type="storage"] button').click();
   for(let i=0;i<60&&!q('.storage-stepper');i++)await sleep(100);
   ok('storage draft survives switching products',all('.storage-bom tbody tr').length===2);
+  clickByText('.header-actions button','تغییر نوع محصول');
+  const serverDraftBeforeGPU = localStorage.getItem('aria-configurator-v3');
+  q('[data-product-type="gpu"] button').click();
+  for(let i=0;i<60&&!q('.gpu-stepper');i++)await sleep(100);
+  ok('independent NVIDIA GPU entry opens',Boolean(q('.gpu-discovery'))&&text('.product-intro').includes('NVIDIA'));
+  checkHeader('GPU discovery');
+  q('.gpu-discovery').requestSubmit();
+  ok('unknown GPU needs remain exploratory',all('.gpu-card').length===6&&!text('.gpu-card').includes('گزینه شروع بررسی'));
+  const editGPU=()=>clickByText('.gpu-tools button','ویرایش نیازها');
+  const gpuAnswer=(key,value)=>{
+    const node=q('#gpu-'+key);node.value=String(value);
+    node.dispatchEvent(new Event('change',{bubbles:true}));
+  };
+  editGPU();
+  gpuAnswer('modelName','<img src=x onerror=alert(1)>');
+  gpuAnswer('parametersB',8);gpuAnswer('precision','16');gpuAnswer('runtimeGB',4);gpuAnswer('replicas',2);
+  gpuAnswer('concurrency',5);gpuAnswer('contextTokens',8192);
+  q('#gpu-modelName').value='Enter-key sample <img src=x onerror=alert(1)>';
+  q('.gpu-discovery').requestSubmit();
+  ok('GPU submission reads focused edits without requiring blur',text('.gpu-model-name').startsWith('Enter-key sample'));
+  ok('GPU weights and memory budget are exact',text('.gpu-metrics').includes('۱۶ GB')&&text('.gpu-metrics').includes('۲۴ GB'));
+  ok('model names render as text, not HTML',text('.gpu-model-name').includes('<img')&&!q('.gpu-model-name img'));
+  ok('NVIDIA sources are linked',all('.gpu-card>a').filter(a=>a.href.startsWith('https://www.nvidia.com/')).length===6);
+  q('[data-gpu-id="nvidia-l4"] button').click();
+  ok('selected GPU and sales inquiry share the available layout',Boolean(q('.gpu-solution-row'))&&getComputedStyle(q('.gpu-selected-grid')).gridTemplateColumns.split(' ').length===1);
+  ok('GPU selection suggests source-listed HPE servers optionally',all('.gpu-server-card').length===4);
+  ok('ML350 accessory requirements remain visible',text('[data-model-id="16912"]').includes('P47219-B21')&&text('[data-model-id="16912"]').includes('P47902-B21'));
+  const gpuQuote = new URL(q('[data-gpu-quote]').href);
+  ok('standalone quote includes selected NVIDIA GPU and unresolved issues',gpuQuote.hostname==='wa.me'&&gpuQuote.searchParams.get('text').includes('NVIDIA L4')&&gpuQuote.searchParams.get('text').includes('قیمت، موجودی'));
+  ok('GPU advisory does not mutate the server draft',localStorage.getItem('aria-configurator-v3')===serverDraftBeforeGPU);
+  clickByText('.gpu-tools button','فعلاً فقط');
+  ok('GPU-only path requires no server and keeps sales inquiry',!q('.gpu-server-section')&&Boolean(q('[data-gpu-quote]')));
+  const gpuExports=[],gpuAnchorClick=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){gpuExports.push(fetch(this.href).then(r=>r.json()));};
+  clickByText('.gpu-tools button','دانلود');
+  HTMLAnchorElement.prototype.click=gpuAnchorClick;
+  const gpuReport = await gpuExports[0];
+  ok('GPU report preserves unknowns and HPE part evidence',gpuReport.status==='technical_review_required'&&gpuReport.limitations.includes('noPooling')&&gpuReport.servers.every(server=>server.evidence.length&&server.hpe_ordering_sku));
+  clickByText('.header-actions button','English');
+  ok('GPU language switch preserves the proposal',document.documentElement.lang==='en'&&text('.gpu-card').includes('NVIDIA L4')&&text('.gpu-metrics').includes('24 GB'));
+  const gpuSaved=JSON.parse(localStorage.getItem('aria-gpu-advisor-v1'));
+  ok('GPU draft retains needs, precision and requested quantity',gpuSaved.requirements.replicas===2&&gpuSaved.requirements.contextTokens===8192&&gpuSaved.gpuId==='nvidia-l4');
+  clickByText('.gpu-main>button','You can also explore');
+  const originalConfirm=window.confirm;
+  window.confirm=()=>false;
+  q('.gpu-server-section>.button').click();
+  for(let i=0;i<60&&!q('.gpu-stepper');i++)await sleep(100);
+  ok('cancelled GPU handoff returns to advisor with server draft intact',Boolean(q('.gpu-stepper'))&&localStorage.getItem('aria-configurator-v3')===serverDraftBeforeGPU);
+  window.confirm=()=>true;
+  q('.gpu-server-section>.button').click();
+  for(let i=0;i<60&&!q('.server-card');i++)await sleep(100);
+  ok('approved GPU handoff opens server selection, not forced configuration',all('.server-card').length===4&&Boolean(q('.gpu-handoff'))&&!q('.category-nav'));
+  all('.server-card').find(card=>card.textContent.includes('ML350')).querySelector('.server-actions button').click();
+  const handoffState=JSON.parse(localStorage.getItem('aria-configurator-v3'));
+  ok('choosing server applies matching HPE GPU SKU and requested quantity',handoffState.state.model_id==='16912'&&handoffState.state.selected.gpu[0]==='S0K89C'&&handoffState.state.gpuQty===2&&handoffState.state.requirements.gpuGB===24);
+  ok('GPU handoff retains hardware review and proposal metadata',Boolean(handoffState.gpuProposal)&&text('.page').includes('still need review'));
+  q('.stepper button:nth-child(4)').click();
+  const gpuServerExports=[],serverAnchorClick=HTMLAnchorElement.prototype.click;
+  HTMLAnchorElement.prototype.click=function(){gpuServerExports.push({name:this.download,text:fetch(this.href).then(response=>response.text())});};
+  clickByText('.review-grid button','Download JSON report');clickByText('.review-grid button','Download BOM');
+  HTMLAnchorElement.prototype.click=serverAnchorClick;
+  const gpuServerJSON=JSON.parse(await gpuServerExports[0].text),gpuServerCSV=await gpuServerExports[1].text;
+  ok('server JSON retains original GPU proposal and unresolved checks',gpuServerJSON.gpu_advisor_proposal.selected.gpu_id==='nvidia-l4'&&gpuServerJSON.gpu_advisor_proposal.limitations.includes('performance')&&gpuServerJSON.unresolved.findings.length>0);
+  ok('server CSV retains GPU advisory limitations',gpuServerCSV.includes('GPU advisor')&&gpuServerCSV.includes('GPU memory does not pool'));
+  window.confirm=originalConfirm;
+  clickByText('.header-actions button','Change product');
+  q('[data-product-type="gpu"] button').click();
+  for(let i=0;i<60&&!q('.gpu-stepper');i++)await sleep(100);
+  clickByText('.gpu-tools button','Edit needs');
+  gpuAnswer('parametersB',70);gpuAnswer('precision','8');gpuAnswer('runtimeGB',10);
+  q('.gpu-discovery').requestSubmit();
+  q('[data-gpu-id="nvidia-h200-nvl"] button').click();
+  ok('GPU outside HPE catalog still supports standalone inquiry',!q('.gpu-server-card')&&Boolean(q('[data-gpu-quote]'))&&text('.gpu-server-section').includes('not proof of incompatibility'));
+  ok('unlisted GPU cannot trigger HPE handoff',!q('.gpu-server-section>.button'));
+  checkHeader('GPU standalone results');
+  clickByText('.gpu-tools button','Edit needs');
+  gpuAnswer('parametersB','');
+  q('.gpu-stepper button:nth-child(3)').click();
+  ok('editing needs invalidates stale GPU solution navigation',Boolean(q('.gpu-discovery'))&&text('.storage-alert').includes('Your needs changed'));
+  gpuAnswer('precision','unknown');gpuAnswer('runtimeGB','');
+  q('.gpu-discovery').requestSubmit();
+  q('[data-gpu-id="nvidia-l4"] button').click();
+  window.confirm=()=>true;
+  q('.gpu-server-section>.button').click();
+  for(let i=0;i<60&&!q('.server-card');i++)await sleep(100);
+  all('.server-card').find(card=>card.textContent.includes('ML350')).querySelector('.server-actions button').click();
+  q('.stepper button:nth-child(4)').click();
+  ok('unknown GPU memory stays unresolved after server handoff',text('.review-grid').includes('full model memory requirement is unresolved')&&!q('.stepper button:nth-child(3)').classList.contains('done'));
+  window.confirm=originalConfirm;
   ok('no horizontal page overflow',document.documentElement.scrollWidth<=innerWidth+1,document.documentElement.scrollWidth+' / '+innerWidth);
 } catch (error) {
   ok('harness completed without throwing', false, `${error && error.message} :: ${error && error.stack}`);

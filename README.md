@@ -1,6 +1,6 @@
 # ARIA — HPE Configuration Studio
 
-A Persian-first, bilingual static configurator for HPE server planning. The site keeps the existing deterministic rule engine and source-linked catalog, then wraps them in a clearer workload advisor, server comparison flow, component workflow, and technical review output.
+A Persian-first, bilingual static configurator for HPE servers and storage, with an independent NVIDIA GPU solution advisor. The site preserves the deterministic rule engines and source-linked catalogs.
 
 The deployable application stays in `dist/` and can be hosted from any static web server.
 
@@ -13,6 +13,39 @@ The configurator helps enterprise IT buyers, infrastructure engineers, and procu
 3. configure source-backed components
 4. review missing selections, known conflicts, unresolved checks, and required accessories
 5. export a CSV BOM, JSON technical report, and print-friendly output
+
+### Independent NVIDIA GPU solutions
+
+The product chooser also offers a GPU-first path. Buyers can describe a language-model
+workload, explore source-linked NVIDIA products, download an advisory JSON report, and
+request pricing through a prefilled WhatsApp message without choosing a server.
+
+The initial catalog includes L4, L40, L40S, H100 NVL (94 GB per GPU, PCIe), H200 NVL
+(141 GB per GPU, PCIe), and RTX PRO 6000 Blackwell Server Edition (96 GB, air variant).
+These are product specifications, not confirmations of stock or HPE qualification.
+NVIDIA source links and the reviewed snapshot date are in `dist/gpu-catalog.js`.
+
+Inference screening uses parameter count × weight bits ÷ 8 (decimal GB), a heuristic
+25% weight margin, and any explicitly supplied runtime/KV memory. If runtime memory
+is blank, the result is an initial floor and stays unresolved. Fine-tuning and full
+training remain exploratory unless the buyer supplies a measured peak per GPU.
+Measured peaks get a heuristic 25% margin, using known raw weight size as a floor
+and flagging inconsistent measurements. No throughput, latency, training duration,
+automatic GPU-count estimate, or pooled-memory guarantee is made. Concurrency and
+context are recorded for technical review, not used to invent KV cache sizes.
+
+Optional HPE suggestions require an exact source-listed HPE ordering SKU, model
+scope and encoded-rule checks. They remain **needs review**, not fully qualified.
+Standalone cards with the same GPU name are not automatically HPE-qualified.
+GPUs absent from the HPE snapshot remain eligible for standalone sales inquiry;
+absence is not reported as proof of incompatibility.
+
+Continuing to server selection requires a deliberate click and confirmation before
+replacing an existing server draft. Selecting a server then carries the corresponding
+HPE GPU ordering part and requested quantity into the existing component workflow.
+GPU proposals, findings and accessory requirements remain in advisory JSON reports.
+Server JSON exports also retain the originating GPU proposal when present; server
+CSV exports include its unresolved advisory limitations.
 
 ## What is intentionally not claimed
 
@@ -33,6 +66,10 @@ This release does **not** claim full HPE qualification.
 - `dist/i18n.js` — Persian and English interface strings
 - `dist/quote.js` — Iranian mobile number normalization for quote requests
 - `dist/catalog.json` — source-backed model, option, and rule snapshot
+- `dist/gpu-catalog.js` — independently sourced NVIDIA specifications and explicit HPE part mappings
+- `dist/gpu-advisor.js` — validated GPU needs, advisory memory screening and HPE proposals
+- `dist/gpu-ui.js`, `dist/gpu-copy.js` — bilingual GPU discovery, standalone inquiry and optional server handoff
+- `tools/test-gpu.mjs` — thresholds, unknown states, data validation and model-specific mapping checks
 - `tools/test-engine.mjs` — focused engine regression tests
 - `tools/test-equivalence.mjs` — generated guard proving option visibility is unchanged (see below)
 - `tools/build-equivalence-test.mjs` — regenerates the frozen reference inside `tools/test-equivalence.mjs`
@@ -62,6 +99,8 @@ node tools/test-quote.mjs
 node tools/test-equivalence.mjs
 node tools/test-i18n.mjs
 node tools/test-inert-rules.mjs
+node tools/test-gpu.mjs
+node tools/test-products.mjs
 node tools/build-rule-i18n.mjs   # fails if the generated rule prose is stale
 node tools/serve.mjs 8123
 ```
@@ -92,7 +131,7 @@ node tools/build-rule-i18n.mjs --write
 ## Browser behavior
 
 - Persian is the default language; English is available without losing the active configuration.
-- Persian UI text prefers IRANSans, IRANSansX, and Iran Sans when installed, with the bundled Vazirmatn web font as a safe fallback. A licensed IRANSans webfont can be added to `dist/` later if a copy is provided.
+- Persian UI text and numbers use the bundled Vazirmatn web font with system fallbacks.
 - Configuration state is stored locally in the browser only and validated before restore.
 - The final quotation form requires a name and Iranian mobile number; email is optional. Selected configuration details are included in a prefilled WhatsApp message, and the user reviews and sends it themselves.
 - Contact details are not saved by the configurator. The configuration draft stays on the current device; the quotation request is shared with Ariaman only if the user sends the WhatsApp message.

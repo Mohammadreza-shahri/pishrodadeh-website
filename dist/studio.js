@@ -39,13 +39,15 @@ function home(type=null, focus=false) {
   main.append(grid);
   if(focus)focusHeading();
 }
-async function openProduct(product) {
+async function openProduct(product, gpuRequest = null) {
   const token=++revision;
-  const context={lang,onHome:()=>home(null,true),onLanguage:value=>{
+  const context={lang,gpuRequest,onHome:()=>home(null,true),onLanguage:value=>{
     setLanguage(value);context.lang=value;
-  },isCurrent:()=>token===revision};
+  },isCurrent:()=>token===revision,
+    onServer:proposal=>openProduct(productsFor('servers')[0],proposal),
+    onGPUCancel:()=>openProduct(productsFor('gpu')[0])};
   const main=shell(lang,{onHome:context.onHome,onLanguage:value=>{
-    setLanguage(value);openProduct(product);
+    setLanguage(value);openProduct(product,gpuRequest);
   }},copy[lang][product.type],copy[lang].loading);
   main.setAttribute('aria-busy','true');
   try {
@@ -53,13 +55,14 @@ async function openProduct(product) {
     if(!context.isCurrent())return;
     await module.mount(context);
     if(context.isCurrent())focusHeading();
-  } catch {
+  } catch (error) {
     if(!context.isCurrent())return;
+    console.error('Product configurator could not load',error);
     const failed=shell(lang,{onHome:context.onHome,onLanguage:value=>{
-      setLanguage(value);openProduct(product);
+      setLanguage(value);openProduct(product,gpuRequest);
     }},copy[lang][product.type],copy[lang].failed);
     failed.append(
-      button(copy[lang].retry,()=>openProduct(product),'primary'));
+      button(copy[lang].retry,()=>openProduct(product,gpuRequest),'primary'));
   }
 }
 home();

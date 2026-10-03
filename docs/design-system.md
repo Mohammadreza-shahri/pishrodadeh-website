@@ -17,6 +17,7 @@
 
 ## Components
 - **Workload cards:** plain-language entry points with consistent iconography and state badges.
+- **GPU solutions:** a third, independent NVIDIA entry. Discovery uses informal bilingual copy, optional unknown answers and expandable memory details. Memory-screen badges are not compatibility certifications. Selected solutions offer standalone sales inquiry first, then optional source-listed HPE servers; missing HPE evidence stays unresolved.
 - **Header:** transparent Ariaman logo and company name (Pishro Dadeh Iranian Parseh); restart sits beside the brand text on desktop and below it on mobile, in both configurators.
 - **Product hero:** a lightweight, accessible illustrative rack-server SVG identifying HPE, with hardware icons and a jump link to the current step; no internal catalog counts or decorative caption.
 - **Advisor panels:** guided profiles plus compact label/input rows and expandable help, preserving the full guidance and accessible descriptions.

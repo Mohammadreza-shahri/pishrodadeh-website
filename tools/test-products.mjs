@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {products,productTypes,productsFor} from '../dist/products.js';
 import {copy} from '../dist/studio-copy.js';
 import {strings} from '../dist/storage-ui-copy.js';
+import {strings as gpuStrings} from '../dist/gpu-copy.js';
 assert.equal(new Set(products.map(p=>p.id)).size,products.length);
 for(const product of products){
   assert(productTypes.includes(product.type));
@@ -10,8 +11,9 @@ for(const product of products){
 }
 assert.deepEqual(productsFor('servers').map(p=>p.id),['hpe-servers']);
 assert.deepEqual(productsFor('storage').map(p=>p.id),['hpe-storage']);
+assert.deepEqual(productsFor('gpu').map(p=>p.id),['nvidia-gpu']);
 assert.deepEqual(productsFor('unshipped-vendor'),[]);
-for(const dictionary of [copy,strings]){
+for(const dictionary of [copy,strings,gpuStrings]){
   assert.deepEqual(Object.keys(dictionary.fa).sort(),Object.keys(dictionary.en).sort());
   for(const [key,value] of Object.entries(dictionary.en)){
     assert(value.length&&dictionary.fa[key].length,key);
@@ -20,7 +22,9 @@ for(const dictionary of [copy,strings]){
 }
 const source=await readFile(new URL('../dist/storage-ui.js',import.meta.url),'utf8');
 for(const [,key] of source.matchAll(/\bt\('([^']+)'\)/g))assert(Object.hasOwn(strings.en,key),'Missing UI copy '+key);
-for(const path of ['../dist/studio-ui.js','../dist/studio.js','../dist/storage-ui.js']){
+const gpuSource=await readFile(new URL('../dist/gpu-ui.js',import.meta.url),'utf8');
+for(const [,key] of gpuSource.matchAll(/\bt\('([^']+)'\)/g))assert(Object.hasOwn(gpuStrings.en,key),'Missing GPU UI copy '+key);
+for(const path of ['../dist/studio-ui.js','../dist/studio.js','../dist/storage-ui.js','../dist/gpu-ui.js']){
   const text=await readFile(new URL(path,import.meta.url),'utf8');
   assert(!/innerHTML|outerHTML|insertAdjacentHTML|eval\(/.test(text),'Unsafe rendering in '+path);
 }

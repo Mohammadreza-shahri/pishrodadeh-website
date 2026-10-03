@@ -45,6 +45,12 @@ jobs:
           node --check dist/products.js
           node --check dist/studio-ui.js
           node --check dist/storage-ui.js
+          node --check dist/gpu-ui.js
+          node --check dist/gpu-advisor.js
+          node --check dist/gpu-catalog.js
+          node --check dist/gpu-copy.js
+          node --check dist/server-links.js
+          node --check dist/sales-contact.js
           node --check dist/storage/engine.mjs
           node --check dist/storage/copy.mjs
 
@@ -57,6 +63,7 @@ jobs:
           node tools/test-inert-rules.mjs
           node tools/test-storage.mjs
           node tools/test-products.mjs
+          node tools/test-gpu.mjs
           node tools/build-storage-assets.mjs --check
 
       - name: Verify generated translation blocks are current
