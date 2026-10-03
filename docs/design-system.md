@@ -29,4 +29,5 @@
 ## Motion and responsiveness
 - Motion is limited to small entrance and hover transitions and is disabled for `prefers-reduced-motion`.
 - Layout targets desktop comparison, tablet review, and a single-column mobile category workflow without changing the underlying product flow.
+- Mobile headers stack branding above actions so product switching cannot squeeze the brand into a vertical column. Controls have at least 44px touch height; component tools, storage option actions, and disk-group fields stack on narrow screens.
 - A skip link, visible focus treatment, modal scroll containment, translation-isolated identifiers, and long-text wrapping support keyboard, assistive-technology, RTL/LTR, and increased-text use.

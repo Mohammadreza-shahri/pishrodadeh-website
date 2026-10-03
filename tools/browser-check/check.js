@@ -20,9 +20,23 @@ const clickByText = (sel, needle) => {
   return Boolean(node);
 };
 
+const checkHeader = name => {
+  const brand = q('.brand-copy');
+  const header = q('.site-header');
+  const actions = all('.header-actions button');
+  const bounds = header.getBoundingClientRect();
+  ok(`${name}: brand has readable width`, brand.getBoundingClientRect().width >= 100, brand.getBoundingClientRect().width);
+  ok(`${name}: controls stay inside header`, actions.every(button => {
+    const rect = button.getBoundingClientRect();
+    return rect.left >= bounds.left && rect.right <= bounds.right && rect.bottom <= bounds.bottom;
+  }));
+  ok(`${name}: no horizontal page overflow`, document.documentElement.scrollWidth <= innerWidth + 1);
+};
+
 try {
   for (let i=0;i<60&&!q('[data-product-type="servers"]');i++)await sleep(100);
   ok('product chooser opens first',all('[data-product-type]').length===2);
+  checkHeader('product chooser');
   q('[data-product-type="servers"] button').click();
   // 1. App boots and the catalog loads.
   for (let i = 0; i < 60 && !q('.stepper'); i += 1) await sleep(150);
@@ -31,6 +45,7 @@ try {
   ok('persian is the default language', document.documentElement.lang === 'fa' && document.documentElement.dir === 'rtl', `${document.documentElement.lang}/${document.documentElement.dir}`);
   ok('page title localized', document.title.includes('آریامن'), document.title);
   ok('brand tagline rendered from the dictionary', text('.brand-copy small').length > 0, text('.brand-copy small'));
+  checkHeader('server configurator');
 
   // 2. Step 1 — workload selection.
   const workloadCards = all('.workload-card');
@@ -57,6 +72,7 @@ try {
   ok('component page reached', Boolean(q('.category-nav')), text('.component-head h2'));
   const catButtons = all('.category-link');
   ok('all categories listed', catButtons.length >= 11, catButtons.length);
+  checkHeader('server components');
 
   const storageBtn = catButtons.find((b) => b.textContent.includes('ذخیره‌سازی'));
   if (storageBtn) storageBtn.click();
@@ -205,6 +221,7 @@ try {
   await importReport(json);
   clickByText('.header-actions button','فارسی');
   ok('storage Persian copy renders',document.documentElement.lang==='fa'&&text('.storage-main').includes('بررسی فنی'));
+  checkHeader('storage configurator');
   clickByText('.header-actions button','تغییر نوع محصول');
   q('[data-product-type="servers"] button').click();
   for(let i=0;i<60&&!q('.stepper');i++)await sleep(100);
