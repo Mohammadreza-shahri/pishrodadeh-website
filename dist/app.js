@@ -1569,6 +1569,15 @@ function gpuRequirementRows(report) {
     [copy.measuredGB, req.measuredGB ?? copy.unknown],
   );
   if (report.software_profile) fields.push([copy.softwareSource, report.software_profile.source]);
+  if (report.selected) {
+    const pcie = report.selected.pcie;
+    fields.push(['PCIe', `${pcie.interface.generation}.0 ×${pcie.interface.lanes}`],
+      [copy.pcieSpecSource, pcie.interface.source], [copy.pcieStandardSource, pcie.source]);
+  }
+  for (const platform of report.source_listed_platforms) {
+    fields.push([copy.sourceListedHosts, `${platform.name} · ${platform.sku} · ${platform.cpuFamily}`],
+      [copy.sources, platform.source]);
+  }
   return fields;
 }
 

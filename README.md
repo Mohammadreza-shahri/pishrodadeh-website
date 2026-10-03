@@ -38,8 +38,37 @@ device, never a pooled total. Discovery no longer asks buyers to choose a genera
 all fourteen products are screened by workload/capability and memory. Restored GPU
 advisor drafts validate their original selection first, then widen to all generations;
 legacy generation values remain accepted for existing server proposals and reports.
-Older GPUs have no encoded exact HPE ordering-part mappings in this
-catalog and remain standalone/host-review inquiries, not automatic server parts.
+Older GPUs still have no encoded configurator options and are not automatic
+server parts. Separate source-listed host proposals now record historical exact
+HPE ordering parts, CPU families and document pages:
+
+- P40: DL380 Gen9 (`Q0V80C`, QuickSpecs `c04346247` v47 p32) and DL380 Gen10
+  (`Q0V80C`, its current QuickSpecs GPU thermal table).
+- T4: DL360/DL380/ML350 Gen10, DL360 Gen10 Plus and DL385 Gen10 Plus
+  (`R0W29C`, accelerator QuickSpecs `c04123180` v43 p6).
+- V100 **PCIe 32GB**: DL380/DL385/DL580 Gen10 (`Q9U36C`, v43 p7).
+- A100 **PCIe 40GB**: DL380 Gen10, DL380/DL385 Gen10 Plus (`R6B53C`, v43 p9).
+- A10/A40: selected Gen10 Plus hosts (`R7G40C` v43 p15 / `R7E31C` v43 p14).
+- A100 **PCIe 80GB non-CEC**: DL380 Gen10 Plus, DL580 Gen10, DL385 Gen10 Plus v2
+  (`R9P49C`, v44 p15). This does not qualify every CEC/non-CEC variant.
+
+These are historical or conditional listings, never whole-generation approval,
+current vendor support, quantity approval or authorization to install a generic
+retail GPU. For P40/DL380 Gen9, the UI and reports retain E5-2600v4-only CPU
+support, primary/secondary GPU risers (secondary needs CPU2), the performance fan
+kit, the documented 1400W PSU-per-card requirement, and chassis/ambient limits.
+The V100 16GB full-length 250W product remains unlisted: the 150W FHHL
+`Q8Z50A` evidence must not be applied to it.
+
+Every GPU has separately sourced PCIe generation/x16 metadata. `dist/gpu-pcie.js`
+illustrates Gen3/Gen4/Gen5 slot negotiation using the lower generation and lane
+count, with theoretical **per-direction** bandwidth after encoding overhead,
+not GPU compute speed, VRAM speed or pooled memory. PCI-SIG's official specification
+webinar p4 establishes bus interoperability; it does not certify a host. HPE
+Gen9/Gen10 names are not PCIe generation numbers. Slot wiring, card space, risers,
+power cables, airflow, BIOS, drivers, chassis and vendor restrictions stay
+unresolved for every product. PCIe evidence and exact host conditions travel to
+GPU/server JSON, CSV and WhatsApp; no draft input or compatibility-engine rule changes.
 
 Purchase condition is independent of generation. No upfront condition question is
 required: product cards show **New / USED / RF** inquiry labels (or **USED / RF**
@@ -88,14 +117,21 @@ production is never dispatched. Protected-branch write restrictions must permit
 the workflow bot, otherwise publication fails visibly. The schedule becomes
 active only after this workflow is published on the default branch.
 
-GPU illustrations are replaced with exact-variant, three-quarter product photos
-linked directly from NVIDIA and the official PNY catalog. Every card uses the same
+All fourteen GPU variants have official reference images from NVIDIA or PNY.
+Most use three-quarter product photos. Every card uses the same
 dark frame and contained sizing; original angles and markings are not mirrored or
 altered. Clicking a photo opens its source. External images remain owned/hosted by
 their publishers; failed image loads show a source link instead of a misleading
-placeholder or another GPU. For the older variants without a verified exact
-official photo (A100 80GB, V100 16/32GB and P40), the same frame explicitly
-links to the manufacturer product brief instead of substituting another card.
+placeholder or another GPU. A100 80GB has its own PNY product-gallery asset.
+Both V100 PCIe capacities use the common official PCIe image on NVIDIA's UK
+V100 product page, with an explicit label that appearance does not distinguish
+16GB/32GB. No V100S or SXM image is substituted. P40 uses the original close-up
+photograph from p1 of the official
+[NVIDIA P40 datasheet](https://www.nvidia.com/content/dam/en-zz/Solutions/design-visualization/documents/nvidia-p40-datasheet.pdf),
+extracted without alteration as `dist/assets/gpu/nvidia-p40-detail.jpg`
+(778×944 JPEG, PDF image object 55). Its caption explicitly states it is a detail
+view, not a full-board photo. The source's joint P40/P4 promotional image is not
+used as a standalone P40 photo.
 Available older PNY photos preserve their original angle; no mirroring is applied.
 
 The GPU advisor starts with six readable groups: AI, virtual desktops/shared GPUs,

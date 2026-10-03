@@ -162,6 +162,8 @@
 .gpu-source section>strong,.gpu-source section>small{display:block;font-size:12px}
 .gpu-source blockquote{margin:10px 0;background:#f4f7f8;padding:12px;font-size:12px;text-align:left;overflow-wrap:anywhere}
 .gpu-source a{font-size:12px}
+.gpu-pcie>a{display:block;margin-block:6px}
+.gpu-pcie>strong{display:block;font-size:14px;margin-top:14px}
 .gpu-server-section{margin-block:32px}
 .gpu-server-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-block:18px}
 .gpu-server-card{min-width:0;padding:22px;background:#fff;border:1px solid var(--line);border-radius:18px}

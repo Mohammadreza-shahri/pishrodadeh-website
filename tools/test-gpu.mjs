@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {initialGPURequirements, validateGPURequirements, estimateGPUMemory,
   gpuCandidates, validateGPUProposal, gpuServerCandidates, gpuAdvisorReport} from '../dist/gpu-advisor.js';
 import {gpuCatalog} from '../dist/gpu-catalog.js';
+import {gpuPCIeLink, gpuPCIeReport} from '../dist/gpu-pcie.js';
 import {gpuPurposes, gpuPurposeGroups, isLanguageWorkload, gpuServerWorkload} from '../dist/gpu-purposes.js';
 import {gpuSoftware, gpuWorkloadExamples, softwareForPurpose, selectedSoftware, applySoftwareProfile, examplesForPurpose} from '../dist/gpu-software.js';
 const data = JSON.parse(await readFile(new URL('../dist/catalog.json', import.meta.url), 'utf8'));
@@ -70,8 +71,60 @@ test('Legacy PCIe memory and power are exact, not SXM or pooled totals', () => {
     const product=gpuCatalog.products.find(product=>product.id===id);
     assert.equal(product.memoryGB,memory);assert.equal(product.watts,watts);
     assert(product.source.startsWith('https://www.nvidia.com/')||product.source.startsWith('https://images.nvidia.com/'));
-    assert.equal(product.hpeSkus.length,0);assert.equal(product.hpePlatforms,undefined);
+    assert.equal(product.hpeSkus.length,0);
   }
+});
+test('Every GPU has source-backed PCIe metadata, separate from server generations', () => {
+  const gen3=['nvidia-t4','nvidia-p40','nvidia-v100-pcie-16','nvidia-v100-pcie-32'];
+  const gen5=['nvidia-h100-nvl','nvidia-h200-nvl','nvidia-rtx-pro-6000-server'];
+  for (const gpu of gpuCatalog.products) {
+    assert.equal(gpu.pcie.generation,gen3.includes(gpu.id)?3:gen5.includes(gpu.id)?5:4);
+    assert.equal(gpu.pcie.lanes,16);
+    assert.equal(new URL(gpu.pcie.source).protocol,'https:');
+    const report=gpuPCIeReport(gpu);
+    assert.equal(report.host_verified,false);
+    assert.equal(report.examples.length,3);
+    assert(report.examples.every(link=>link.status==='bus_interoperability_only_host_unverified'));
+  }
+});
+test('PCIe generation and lane negotiation never imply host qualification or VRAM pooling', () => {
+  const p40=gpuCatalog.products.find(gpu=>gpu.id==='nvidia-p40');
+  const a100=gpuCatalog.products.find(gpu=>gpu.id==='nvidia-a100-pcie-40');
+  assert.deepEqual(gpuPCIeLink(p40,5),{generation:3,lanes:16,theoreticalGBpsPerDirection:15.75,
+    status:'bus_interoperability_only_host_unverified'});
+  assert.equal(gpuPCIeLink(a100,3).theoreticalGBpsPerDirection,15.75);
+  assert.equal(gpuPCIeLink(a100,5).theoreticalGBpsPerDirection,31.51);
+  assert.equal(gpuPCIeLink(a100,5,8).theoreticalGBpsPerDirection,15.75);
+  for (const args of [[p40,9],[p40,4,0],[p40,4,3],[p40,NaN],[{pcie:{generation:4,lanes:8}},4]]) {
+    assert.throws(()=>gpuPCIeLink(...args));
+  }
+});
+test('Historical HPE host listings retain exact parts and CPU limits without creating configurations', () => {
+  const requirements={...req,generation:'all',parametersB:4};
+  for (const gpu of gpuCatalog.products.filter(gpu=>gpu.generation==='older')) {
+    const report=gpuAdvisorReport(data,requirements,gpu.id);
+    assert.equal(report.servers.length,0);
+    assert(report.limitations.includes('pcieReview'));
+    assert.equal(report.selected.pcie.host_verified,false);
+    assert(report.source_listed_platforms.every(host=>host.configurable===false&&
+      host.quantity_verified===false&&host.status==='technical_review_required'));
+    assert.equal(report.source_listed_platforms.length,(gpu.hpePlatforms||[]).length);
+  }
+  const p40=gpuAdvisorReport(data,requirements,'nvidia-p40');
+  const gen9=p40.source_listed_platforms.find(host=>host.name==='HPE ProLiant DL380 Gen9');
+  assert.equal(gen9.sku,'Q0V80C');assert.equal(gen9.cpuFamily,'E5-2600v4 only');
+  assert.equal(gen9.page,32);assert.equal(gen9.version,47);assert(gen9.archived);
+  assert(p40.limitations.includes('p40Gen9Review'));
+  assert(p40.limitations.includes('archivedPlatformReview'));
+  assert(!p40.limitations.includes('hpeUnlisted'));
+  assert(!p40.source_listed_platforms.some(host=>/DL360|ML350/.test(host.name)));
+  const v100=gpuAdvisorReport(data,requirements,'nvidia-v100-pcie-16');
+  assert.equal(v100.source_listed_platforms.length,0);
+  assert(v100.limitations.includes('hpeUnlisted')); // FHHL 150W evidence does not apply to this 250W full-length card.
+  const a100=gpuAdvisorReport(data,requirements,'nvidia-a100-pcie-80');
+  assert(a100.limitations.includes('nonCECReview'));
+  assert(a100.source_listed_platforms.every(host=>host.sku==='R9P49C'));
+  assert(!a100.source_listed_platforms.some(host=>host.name==='HPE ProLiant DL380 Gen10'));
 });
 test('Old graphics, scientific and MIG routes use product capabilities', () => {
   const older={...req,generation:'older',task:'general',useCase:'video'};
@@ -93,8 +146,9 @@ test('Purchase condition is not stock, health or a compatibility guarantee', () 
     assert(report.limitations.includes('conditionUnverified'));
     assert(report.limitations.includes('olderSoftwareReview'));
     assert(report.limitations.includes('olderHardwareReview'));
-    assert(report.limitations.includes('hpeUnlisted'));
-    assert.equal(report.servers.length,0);assert.equal(report.source_listed_platforms.length,0);
+    assert(report.limitations.includes('hpePlatformReview'));
+    assert(report.limitations.includes('archivedPlatformReview'));
+    assert.equal(report.servers.length,0);assert.equal(report.source_listed_platforms.length,5);
     assert.equal(report.status,'technical_review_required');
     assert.equal(report.estimate.targetGB,14);
     assert(report.limitations.includes('usedHealthReview'));

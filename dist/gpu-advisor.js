@@ -2,6 +2,7 @@ import {initial, optionCheck, activeFindings, requiredKits} from './engine.js';
 import {gpuCatalog} from './gpu-catalog.js';
 import {gpuPurposes, isLanguageWorkload, gpuPurposeEligible, gpuPurposePriority, gpuServerWorkload} from './gpu-purposes.js';
 import {selectedSoftware} from './gpu-software.js';
+import {gpuPCIeReport} from './gpu-pcie.js';
 
 export const GPU_WORKLOADS = ['inference', 'finetune', 'training'];
 export const PRECISIONS = ['unknown', '4', '8', '16', '32'];
@@ -61,7 +62,7 @@ export function estimateGPUMemory(value) {
     targetGB = Math.ceil((weightsGB * 1.25 + (req.runtimeGB ?? 0)) * 10) / 10;
     basis = 'weights';
   }
-  const unresolved = ['performance', 'software', 'hardware', 'noPooling', 'availability'];
+  const unresolved = ['performance', 'software', 'hardware', 'pcieReview', 'noPooling', 'availability'];
   unresolved.push('conditionUnverified');
   if (['used','refurbished'].includes(req.condition)) unresolved.push('usedHealthReview','usedWarrantyReview');
   if (req.condition === 'refurbished') unresolved.push('refurbishedReview');
@@ -147,10 +148,11 @@ export function gpuAdvisorReport(data, requirements, gpuId = null) {
       status:'application_version_license_and_hardware_unverified'} : null,
     selected: selected ? {gpu_id:gpuId, name:selected.name, quantity:validated.replicas,
       condition_requested:validated.condition, condition_verified:false,
-      generation:selected.generation || 'current', memory_per_device_gb:selected.usableGB, source:selected.source} : null,
+      generation:selected.generation || 'current', memory_per_device_gb:selected.usableGB, source:selected.source,
+      pcie:gpuPCIeReport(selected)} : null,
     candidates:candidates.map(candidate => ({gpu_id:candidate.id, name:candidate.name, source:candidate.source,
       generation:candidate.generation || 'current', condition_verified:false,
-      memory_per_device_gb:candidate.usableGB, capacity_fit:candidate.fit,
+      memory_per_device_gb:candidate.usableGB, capacity_fit:candidate.fit, pcie:gpuPCIeReport(candidate),
       evidence:candidate.options.map(option => ({model_id:option.model_id, evidence:option.evidence}))})),
     servers:proposal ? gpuServerCandidates(data, proposal).map(candidate => ({
       model_id:candidate.model.id, name:candidate.model.name, status:candidate.status,
@@ -166,5 +168,7 @@ export function gpuAdvisorReport(data, requirements, gpuId = null) {
     limitations:[...new Set([...estimate.unresolved, ...(selected?.layout === 'nvl' ? ['nvlNote'] : []),
       ...(selected?.generation === 'older' ? ['olderSoftwareReview','olderHardwareReview','usedHealthReview','usedWarrantyReview','refurbishedReview'] : []),
       ...(selected?.hpePlatforms?.length ? ['hpePlatformReview'] : []),
+      ...(selected?.hpePlatforms?.some(platform => platform.archived) ? ['archivedPlatformReview'] : []),
+      ...(selected?.hpePlatforms || []).flatMap(platform => platform.reviewKeys || []),
       ...(selected && !selected.options.length && !selected.hpePlatforms?.length ? ['hpeUnlisted'] : [])])]};
 }

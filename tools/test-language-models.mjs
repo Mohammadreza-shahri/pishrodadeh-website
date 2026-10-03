@@ -73,17 +73,26 @@ assert.match(failedRefresh.stderr, /Fixture source unavailable/);
 assert.equal(await readFile(new URL('../dist/language-models.json', import.meta.url), 'utf8'), before);
 const images = new Set();
 for (const gpu of gpuCatalog.products) {
-  if (!gpu.image) {
-    assert.equal(gpu.generation, 'older');
-    assert(gpu.source.endsWith('.pdf'));
-    continue;
+  assert(gpu.image,gpu.id);
+  if (images.has(gpu.image.url)) {
+    const siblings=gpuCatalog.products.filter(product=>product.image?.url===gpu.image.url);
+    assert.deepEqual(siblings.map(product=>product.id).sort(),['nvidia-v100-pcie-16','nvidia-v100-pcie-32']);
+    assert.deepEqual(gpu.image.sharedVariants,siblings.map(product=>product.id));
   }
-  assert(gpu.image && !images.has(gpu.image.url), gpu.id);
   images.add(gpu.image.url);
-  const image = new URL(gpu.image.url), source = new URL(gpu.image.source);
-  assert.equal(image.protocol, 'https:');
-  assert(['www.nvidia.com', 'd2vfia6k6wrouk.cloudfront.net'].includes(image.hostname));
+  const source = new URL(gpu.image.source);
+  if (gpu.image.url.startsWith('./')) {
+    assert.equal(gpu.id,'nvidia-p40');assert.equal(gpu.image.url,'./assets/gpu/nvidia-p40-detail.jpg');
+    assert.equal(gpu.image.detail,true);assert.equal(gpu.image.page,1);
+    const bytes=await readFile(new URL('../dist/assets/gpu/nvidia-p40-detail.jpg',import.meta.url));
+    assert.deepEqual([...bytes.subarray(0,3)],[255,216,255]);assert(bytes.length>30000);
+  } else {
+    const image = new URL(gpu.image.url);
+    assert.equal(image.protocol, 'https:');
+    assert(['www.nvidia.com', 'd2vfia6k6wrouk.cloudfront.net'].includes(image.hostname));
+    assert(!/sxm|workstation-edition|max-q/i.test(image.pathname));
+  }
+  assert.equal(source.protocol,'https:');
   assert(['www.nvidia.com', 'www.pny.com'].includes(source.hostname));
-  assert(!/sxm|workstation-edition|max-q/i.test(image.pathname));
 }
-console.log(`Language-model validation, safe refresh and ${images.size} exact-variant photo mappings passed.`);
+console.log(`Language-model validation, safe refresh and ${gpuCatalog.products.length} official photo mappings (${images.size} distinct images) passed.`);

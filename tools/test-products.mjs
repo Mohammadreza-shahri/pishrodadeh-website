@@ -6,6 +6,7 @@ import {strings} from '../dist/storage-ui-copy.js';
 import {strings as gpuStrings} from '../dist/gpu-copy.js';
 import {gpuPurposes, gpuPurposeGroups} from '../dist/gpu-purposes.js';
 import {gpuSoftware, gpuWorkloadExamples} from '../dist/gpu-software.js';
+import {gpuCatalog} from '../dist/gpu-catalog.js';
 assert.equal(new Set(products.map(p=>p.id)).size,products.length);
 for(const product of products){
   assert(productTypes.includes(product.type));
@@ -30,6 +31,11 @@ for (const group of gpuPurposeGroups) {
   assert(Object.hasOwn(gpuStrings.en,'group_'+group.id+'Hint'));
 }
 for (const software of gpuSoftware) assert(Object.hasOwn(gpuStrings.en,'guide_'+software.guide));
+for (const product of gpuCatalog.products) {
+  for (const host of product.hpePlatforms || []) {
+    for (const key of host.reviewKeys || []) assert(Object.hasOwn(gpuStrings.en,key),'Missing host constraint copy '+key);
+  }
+}
 for (const example of gpuWorkloadExamples) {
   for (const locale of ['fa','en']) {
     assert(Object.hasOwn(gpuStrings[locale],'example_'+example.id));
@@ -43,7 +49,7 @@ for (const purpose of gpuPurposes) {
   }
 }
 for(const [,key] of gpuSource.matchAll(/\bt\('([^']+)'\)/g))assert(Object.hasOwn(gpuStrings.en,key),'Missing GPU UI copy '+key);
-for(const path of ['../dist/studio-ui.js','../dist/studio.js','../dist/storage-ui.js','../dist/gpu-ui.js']){
+for(const path of ['../dist/studio-ui.js','../dist/studio.js','../dist/storage-ui.js','../dist/gpu-ui.js','../dist/gpu-pcie.js']){
   const text=await readFile(new URL(path,import.meta.url),'utf8');
   assert(!/innerHTML|outerHTML|insertAdjacentHTML|eval\(/.test(text),'Unsafe rendering in '+path);
 }

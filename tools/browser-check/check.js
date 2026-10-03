@@ -360,8 +360,8 @@ try {
   ok('model names render as text, not HTML',text('.gpu-model-name').includes('<img')&&!q('.gpu-model-name img'));
   ok('NVIDIA sources are linked',all('.gpu-card>a').filter(a=>/^https:\/\/(?:www|images)\.nvidia\.com\//.test(a.href)).length===14);
   const photos = all('.gpu-photo img');
-  ok('available photos are exact official variants, not generic drawings',photos.length===10&&new Set(photos.map(image=>image.src)).size===10&&!q('.gpu-graphic'));
-  ok('GPU photos use the same frame and preserve the whole product',photos.every(image=>image.alt.includes('NVIDIA')&&getComputedStyle(image).objectFit==='contain')&&all('.gpu-photo').every(frame=>Math.abs(frame.getBoundingClientRect().height-180)<1));
+  ok('all GPU variants have sourced photos, with only V100 sharing a disclosed reference image',photos.length===14&&new Set(photos.map(image=>image.src)).size===13&&!q('.gpu-graphic'));
+  ok('GPU photos use the same frame without stretching',photos.every(image=>image.alt.includes('NVIDIA')&&getComputedStyle(image).objectFit==='contain')&&all('.gpu-photo').every(frame=>Math.abs(frame.getBoundingClientRect().height-180)<1));
   photos[0].dispatchEvent(new Event('error'));
   ok('failed photo remains an explicit official-source link',photos[0].hidden&&!q('.gpu-photo-failed').hidden&&q('.gpu-photo a').href.startsWith('https://www.pny.com/'));
   q('[data-gpu-id="nvidia-l4"] button').click();
@@ -483,6 +483,10 @@ try {
     vdiJSON.gpu_advisor_proposal.selected.condition_verified===false&&
     vdiJSON.gpu_advisor_proposal.limitations.includes('conditionUnverified'));
   ok('VDI CSV keeps workload context and remains formula-safe',vdiCSV.includes('CAD desktop')&&vdiCSV.includes('VDI and virtual workstations')&&vdiCSV.includes("'" + '=VMware test'));
+  ok('server exports keep PCIe source and unresolved installation guidance',
+    vdiJSON.gpu_advisor_proposal.selected.pcie.host_verified===false&&
+    vdiJSON.gpu_advisor_proposal.selected.pcie.interface.generation===4&&
+    vdiCSV.includes('pcisig.com/')&&vdiCSV.includes('bus interoperability, not installation approval'));
   const originalOpen=window.open;let vdiWhatsApp='';
   window.open=url=>{vdiWhatsApp=url;return null;};
   q('#quote-name').value='Test customer';q('#quote-mobile').value='09121234567';
@@ -624,9 +628,12 @@ try {
   ok('restored older draft explores all fourteen workload-relevant products',all('.gpu-card').length===14);
   ok('USED RF are clearly inquiry labels, not verified stock',text('.gpu-purchase-summary').includes('not verified stock')&&
     text('[data-gpu-id="nvidia-t4"]').includes('USED / RF'));
-  ok('missing exact photos use honest source documents, never another GPU',
-    all('.gpu-photo img').length===10&&all('.gpu-photo>a:not(:has(img))').length===4&&
-    all('.gpu-photo>a:not(:has(img))').every(link=>link.href.endsWith('.pdf')));
+  ok('remaining models have official photos with variant/detail disclosures',
+    all('.gpu-photo img').length===14&&all('.gpu-photo>a:not(:has(img))').length===0&&
+    text('[data-gpu-id="nvidia-v100-pcie-16"]').includes('does not identify 16GB')&&
+    text('[data-gpu-id="nvidia-p40"]').includes('not a full-board photograph'));
+  ok('every GPU displays PCIe source-backed bus guidance without a procurement question',
+    all('.gpu-pcie').length===14&&!q('#gpu-generation')&&!q('#gpu-condition'));
   ok('older GPU buying route has no horizontal overflow',document.documentElement.scrollWidth<=innerWidth+1);
   for (const gpu of gpuCatalog.products.filter(gpu=>gpu.generation==='older')) {
     q('[data-gpu-id="'+gpu.id+'"] button').click();
@@ -634,8 +641,21 @@ try {
     ok(gpu.id+' used inquiry carries exact variant and health/software caveats',
       message.includes(gpu.name)&&message.includes('Used')&&message.includes('ECC')&&
       message.includes('CUDA/driver')&&message.includes('not SXM'));
-    ok(gpu.id+' cannot fabricate HPE handoff',!q('.gpu-server-section>.button')&&
-      !q('.gpu-source-platform')&&Boolean(q('[data-gpu-quote]')));
+    ok(gpu.id+' source-listed hosts cannot fabricate HPE handoff',!q('.gpu-server-section>.button')&&
+      all('.gpu-source-platform').length===(gpu.hpePlatforms||[]).length&&Boolean(q('[data-gpu-quote]')));
+    const bus=q('.gpu-pcie');bus.open=true;
+    ok(gpu.id+' cross-generation link examples preserve unknown installation status',
+      text('.gpu-pcie').includes('bus interoperability, not installation approval')&&
+      text('.gpu-pcie').includes('PCIe '+gpu.pcie.generation+'.0')&&
+      message.includes('pcisig.com/')&&message.includes('not installation approval'));
+    if (gpu.id==='nvidia-p40') {
+      ok('P40 Gen9 proposal exposes exact CPU, fan and power limits',
+        text('.gpu-server-section').includes('DL380 Gen9')&&text('.gpu-server-section').includes('E5-2600v4')&&
+        text('.gpu-server-section').includes('719079-B21')&&message.includes('1400W')&&message.includes('720620-B21'));
+      const hostQuote=new URL(all('.gpu-source-platform>a')[0].href).searchParams.get('text');
+      ok('historical host inquiry retains exact model and constraints',hostQuote.includes('DL380 Gen9')&&hostQuote.includes('Q0V80C')&&hostQuote.includes('E5-2600v4'));
+    }
+    ok(gpu.id+' host and bus details fit mobile width',document.documentElement.scrollWidth<=innerWidth+1);
     q('.gpu-stepper button:nth-child(2)').click();
   }
   ok('all-generation view includes newer and older GPUs',all('.gpu-card').length===14);
@@ -649,6 +669,10 @@ try {
     report.selected.memory_per_device_gb===80&&report.selected.condition_requested==='used'&&
     report.selected.condition_verified===false&&report.requirements.generation==='all'&&
     report.limitations.includes('usedHealthReview')&&report.limitations.includes('olderHardwareReview'));
+  ok('GPU report preserves bus-only status and non-CEC HPE variant caveat',
+    report.selected.pcie.host_verified===false&&report.selected.pcie.interface.generation===4&&
+    report.source_listed_platforms.every(host=>host.configurable===false&&host.sku==='R9P49C')&&
+    report.limitations.includes('nonCECReview')&&report.limitations.includes('archivedPlatformReview'));
   clickByText('.gpu-tools button','Edit needs');
   q('#gpu-parametersB').value='8';q('#gpu-parametersB').dispatchEvent(new Event('change',{bubbles:true}));
   q('.gpu-stepper button:nth-child(3)').click();

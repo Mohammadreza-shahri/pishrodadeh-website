@@ -2,6 +2,7 @@ import {initialGPURequirements, validateGPURequirements, estimateGPUMemory,
   gpuCandidates, validateGPUProposal, gpuServerCandidates, gpuAdvisorReport} from './gpu-advisor.js';
 import {strings} from './gpu-copy.js';
 import {gpuCatalog} from './gpu-catalog.js';
+import {gpuPCIeReport} from './gpu-pcie.js';
 import {strings as serverStrings} from './i18n.js';
 import {officialProductPages} from './server-links.js';
 import {salesWhatsApp} from './sales-contact.js';
@@ -430,7 +431,8 @@ function gpuPhoto(candidate) {
   const source = el('a'); source.href = candidate.image.source;
   source.target = '_blank'; source.rel = 'noopener noreferrer'; source.title = t('photoSource');
   const image = el('img'); image.alt = candidate.name;
-  if (new URL(candidate.image.url).hostname === 'd2vfia6k6wrouk.cloudfront.net') image.classList.add('gpu-photo-cutout');
+  if (new URL(candidate.image.url, location.href).hostname === 'd2vfia6k6wrouk.cloudfront.net' ||
+      candidate.image.sharedVariants) image.classList.add('gpu-photo-cutout');
   image.width = 800; image.height = 800; image.loading = 'lazy'; image.decoding = 'async';
   image.referrerPolicy = 'no-referrer';
   const failure = el('span', t('photoFailed'), 'gpu-photo-failed'); failure.hidden = true;
@@ -440,6 +442,34 @@ function gpuPhoto(candidate) {
   };
   image.src = candidate.image.url; source.append(image, failure); frame.append(source);
   return frame;
+}
+function pcieDetails(candidate) {
+  const report = gpuPCIeReport(candidate);
+  const details = el('details', null, 'gpu-source gpu-pcie');
+  details.append(el('summary', `PCIe ${candidate.pcie.generation}.0 ×${candidate.pcie.lanes} · ${t('pcieTitle')}`));
+  details.append(el('p', t('pcieReview'), 'small muted'));
+  for (const link of report.examples) {
+    const row = el('p', `${t('pcieSlot')} ${link.slot_generation}.0 ×16 → PCIe ${link.generation}.0 ×${link.lanes} · ${number(link.theoreticalGBpsPerDirection)} GB/s`, 'small code');
+    row.dir = 'ltr'; row.translate = false; details.append(row);
+  }
+  details.append(el('p', t('pcieBandwidthNote'), 'small muted'), el('p', t('pcieGenerationNote'), 'small muted'));
+  for (const [label, url] of [['pcieSpecSource', candidate.pcie.source], ['pcieStandardSource', report.source]]) {
+    const source = el('a', t(label)); source.href = url;
+    source.target = '_blank'; source.rel = 'noopener noreferrer'; details.append(source);
+  }
+  if (candidate.hpePlatforms?.length) {
+    details.append(el('strong', t('sourceListedHosts')));
+    for (const platform of candidate.hpePlatforms) {
+      const row = el('p', `${platform.name} · ${platform.sku}`, 'small code'); row.dir = 'ltr';
+      details.append(row);
+    }
+    details.append(el('p', t('hpePlatformReview'), 'small muted'));
+    if (candidate.hpePlatforms.some(platform => platform.archived)) details.append(el('p', t('archivedPlatformReview'), 'small muted'));
+    for (const key of new Set(candidate.hpePlatforms.flatMap(platform => platform.reviewKeys || []))) {
+      details.append(el('p', t(key), 'small muted'));
+    }
+  }
+  return details;
 }
 function sourceDetails(options) {
   const details = el('details', null, 'gpu-source');
@@ -514,8 +544,10 @@ function resultsPage(main) {
     const card = el('article', null, 'gpu-card' + (state.gpuId === candidate.id ? ' selected' : ''));
     card.dataset.gpuId = candidate.id;
     card.append(gpuPhoto(candidate));
+    if (candidate.image?.sharedVariants) card.append(el('small', t('photoSharedVariant'), 'muted'));
+    if (candidate.image?.detail) card.append(el('small', t('photoDetail'), 'muted'));
     const name = el('h2', candidate.name); name.dir = 'ltr'; name.translate = false;
-    card.append(name, el('small', t(candidate.layout)));
+    card.append(name, el('small', t(candidate.layout)), pcieDetails(candidate));
     card.append(el('span', t(candidate.generation === 'older' ? 'usedProductLabel' : 'productConditionLabel'), 'chip outline'));
     if (candidate.generation === 'older') {
       card.append(el('span', t('olderGeneration'), 'chip outline'), el('p', t('olderSoftwareReview'), 'small muted'));
@@ -591,6 +623,10 @@ function quoteURL() {
     ] : []),
     `${t('target')}: ${memory(report.estimate.targetGB)}`, t('limitations'),
     ...report.limitations.map(key => '- ' + t(key)), selected?.source,
+    ...(selected ? [
+      `PCIe ${selected.pcie.interface.generation}.0 ×${selected.pcie.interface.lanes}`,
+      selected.pcie.interface.source, selected.pcie.source,
+    ] : []),
     ...report.source_listed_platforms.map(platform => `${platform.name} · ${platform.sku} · ${t('review')} · ${platform.source}`),
     t('salesPath')];
   return `https://wa.me/${salesWhatsApp}?text=${encodeURIComponent(lines.filter(Boolean).join('\n'))}`;
@@ -613,11 +649,14 @@ function serverProposals(main) {
     const name = el('h3', platform.name); name.dir = 'ltr'; name.translate = false;
     card.append(name, el('span', t('review'), 'chip outline'), el('p', `${platform.sku} · ${platform.cpuFamily}`, 'code'),
       el('p', t('hpePlatformReview'), 'small muted'), el('p', t('hardware'), 'small muted'));
+    if (platform.archived) card.append(el('p', t('archivedPlatformReview'), 'small muted'));
+    for (const key of platform.reviewKeys || []) card.append(el('p', t(key), 'small muted'));
     const evidence = el('details'); evidence.append(el('summary', t('sources')));
     const quote = el('blockquote', platform.quote); quote.dir = 'ltr';
     const source = el('a', t('manufacturerPage')); source.href = platform.source;
     source.target = '_blank'; source.rel = 'noopener noreferrer';
     evidence.append(quote, el('small', `${t('modelCatalogDate')} ${platform.checkedAt}`), source);
+    if (platform.version) evidence.append(el('small', `QuickSpecs v${platform.version} · ${t('sourcePage')} ${number(platform.page)}`));
     const inquiry = el('a', t('platformQuote'), 'button primary');
     inquiry.href = quoteURL() + encodeURIComponent(`\n${t('platformQuote')}: ${platform.name} · ${platform.sku}\n${platform.source}`);
     inquiry.target = '_blank'; inquiry.rel = 'noopener noreferrer';
