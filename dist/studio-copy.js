@@ -2,9 +2,9 @@ export const copy = {
   fa: {
     title:'استودیوی پیکربندی هوشمند تجهیزات', brand:'آریامن', tagline:'پیشرو داده ایرانیان پارسه',
     choose:'انتخاب و پیکربندی هوشمند تجهیزات',
-    lead:'نیازتان را بگویید؛ آریامن گزینه‌های متناسب را پیشنهاد می‌دهد و در انتخاب قطعات، بررسی سازگاری و آماده‌سازی گزارش فنی همراه شماست.',
+    lead:'نیازت رو بگو؛ پیشنهاد بگیر، قطعات رو انتخاب کن و گزارش فنی بساز.',
     servers:'سرور', storage:'ذخیره‌سازی', gpu:'راهکار GPU',
-    gpuLead:'انتخاب GPUهای NVIDIA برای مدل زبانی و پردازش؛ درخواست قیمت جداگانه و پیشنهاد اختیاری سرور HPE.',
+    gpuLead:'از کاربردت شروع کن؛ AI، رندر، ویدئو یا GPU مشترک. استعلام قیمت و پیشنهاد سرور HPE هم اختیاری‌اند.',
     serversLead:'پیشنهاد سرور بر اساس کاربرد و ظرفیت موردنیاز، همراه با بررسی قواعد سازگاری قطعات.',
     storageLead:'پیشنهاد تجهیزات متناسب با نیازهای ذخیره‌سازی، پشتیبان‌گیری و آرشیو؛ از انتخاب دستگاه تا بررسی قطعات.',
     available:'محصولات قابل پیکربندی', select:'شروع پیکربندی', vendor:'سازنده را انتخاب کنید',
@@ -15,9 +15,9 @@ export const copy = {
   en: {
     title:'Smart Equipment Configuration Studio', brand:'ARIAMAN', tagline:'Pishro Dadeh Iranian Parseh',
     choose:'Smart equipment selection and configuration',
-    lead:'Tell us what you need. Ariaman suggests suitable options and guides you through component selection, compatibility checks and your technical report.',
+    lead:'Tell us your needs, explore suggestions, choose parts and build your technical report.',
     servers:'Server', storage:'Storage', gpu:'GPU solution',
-    gpuLead:'Explore NVIDIA GPUs for language models and compute, request standalone pricing and optionally choose an HPE server.',
+    gpuLead:'Start with your use case: AI, rendering, video or shared GPUs. Pricing and HPE server proposals stay optional.',
     serversLead:'Get server suggestions based on your workload and capacity needs, with component compatibility checks.',
     storageLead:'Explore systems suited to your primary storage, backup and archive needs, then review their components.',
     available:'Available configurators', select:'Start configuration', vendor:'Choose a vendor',

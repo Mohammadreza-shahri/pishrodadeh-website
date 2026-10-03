@@ -4,6 +4,7 @@ import {products,productTypes,productsFor} from '../dist/products.js';
 import {copy} from '../dist/studio-copy.js';
 import {strings} from '../dist/storage-ui-copy.js';
 import {strings as gpuStrings} from '../dist/gpu-copy.js';
+import {gpuPurposes} from '../dist/gpu-purposes.js';
 assert.equal(new Set(products.map(p=>p.id)).size,products.length);
 for(const product of products){
   assert(productTypes.includes(product.type));
@@ -23,6 +24,12 @@ for(const dictionary of [copy,strings,gpuStrings]){
 const source=await readFile(new URL('../dist/storage-ui.js',import.meta.url),'utf8');
 for(const [,key] of source.matchAll(/\bt\('([^']+)'\)/g))assert(Object.hasOwn(strings.en,key),'Missing UI copy '+key);
 const gpuSource=await readFile(new URL('../dist/gpu-ui.js',import.meta.url),'utf8');
+for (const purpose of gpuPurposes) {
+  for (const key of ['purpose_'+purpose.id, 'purpose_'+purpose.id+'Hint', 'route_'+purpose.id,
+    ...purpose.limits, ...purpose.questions.filter(key => !['sharing','computeType'].includes(key)).flatMap(key => [key,key+'Hint'])]) {
+    assert(Object.hasOwn(gpuStrings.en,key),'Missing purpose copy '+key);
+  }
+}
 for(const [,key] of gpuSource.matchAll(/\bt\('([^']+)'\)/g))assert(Object.hasOwn(gpuStrings.en,key),'Missing GPU UI copy '+key);
 for(const path of ['../dist/studio-ui.js','../dist/studio.js','../dist/storage-ui.js','../dist/gpu-ui.js']){
   const text=await readFile(new URL(path,import.meta.url),'utf8');

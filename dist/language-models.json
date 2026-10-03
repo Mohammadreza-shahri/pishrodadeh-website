@@ -1,0 +1,626 @@
+{
+  "version": 1,
+  "updatedAt": "2026-10-03T12:08:00.665Z",
+  "models": [
+    {
+      "id": "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
+      "revision": "e434a23f91ba5b4923cf6c9d9a238eb4a08e3a11",
+      "parametersB": 15.8,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 163840
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-R1",
+      "revision": "56d4cbbb4d29f4355bab4b9a39ccb717a14ad5ad",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 163840
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B",
+      "revision": "ad9f0ae0864d7fbcd1cd905e3c6c5b069cc8b562",
+      "parametersB": 1.8,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V3",
+      "revision": "e815299b0bcbac849fa540c768ef21845365c9eb",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 163840
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3-0324",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V3-0324",
+      "revision": "e9b33add76883f293d6bf61f6bd89b497e80e335",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 163840
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V3.2",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V3.2",
+      "revision": "a7e62ac04ecb2c0a54d736dc46601c5606cf10a6",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 163840
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash",
+      "revision": "60d8d70770c6776ff598c94bb586a859a38244f1",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash-0731",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-0731",
+      "revision": "7872f01b1d1fe23eabc4c98b48bffcef5a386062",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Flash-DSpark",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-DSpark",
+      "revision": "62af8fffb2f7030cac4de2f0169f5b8d1101b646",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Pro-0813",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-0813",
+      "revision": "72e1d3230f6c080a530b0a1d46f8eb4602340597",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "deepseek-ai/DeepSeek-V4-Pro-DSpark",
+      "source": "https://huggingface.co/deepseek-ai/DeepSeek-V4-Pro-DSpark",
+      "revision": "7c09739fd136abfb70a49ec334157f65f45b52cd",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/functiongemma-270m-it",
+      "source": "https://huggingface.co/google/functiongemma-270m-it",
+      "revision": "39eccb091651513a5dfb56892d3714c1b5b8276c",
+      "parametersB": 0.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-2-2b",
+      "source": "https://huggingface.co/google/gemma-2-2b",
+      "revision": "c5ebcd40d208330abc697524c919956e692655cf",
+      "parametersB": 2.7,
+      "defaults": {
+        "precision": "32",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-2-2b-it",
+      "source": "https://huggingface.co/google/gemma-2-2b-it",
+      "revision": "299a8560bedf22ed1c72a8a11e7dce4a7f9f51f8",
+      "parametersB": 2.7,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-2-9b-it",
+      "source": "https://huggingface.co/google/gemma-2-9b-it",
+      "revision": "11c9b309abf73637e4b6f9a3fa1e92e615547819",
+      "parametersB": 9.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-2b",
+      "source": "https://huggingface.co/google/gemma-2b",
+      "revision": "9cf48e52b224239de00d483ec8eb84fb8d0f3a3a",
+      "parametersB": 2.6,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-3-1b-it",
+      "source": "https://huggingface.co/google/gemma-3-1b-it",
+      "revision": "dcc83ea841ab6100d6b47a070329e1ba4cf78752",
+      "parametersB": 1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-3-270m",
+      "source": "https://huggingface.co/google/gemma-3-270m",
+      "revision": "9b0cfec892e2bc2afd938c98eabe4e4a7b1e0ca1",
+      "parametersB": 0.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-3-270m-it",
+      "source": "https://huggingface.co/google/gemma-3-270m-it",
+      "revision": "ac82b4e820549b854eebf28ce6dedaf9fdfa17b3",
+      "parametersB": 0.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-3-270m-it-qat-q4_0-unquantized",
+      "source": "https://huggingface.co/google/gemma-3-270m-it-qat-q4_0-unquantized",
+      "revision": "8f726c6a497fd439f0d6f726e52f8e3b439a26e5",
+      "parametersB": 0.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/gemma-3-270m-qat-q4_0-unquantized",
+      "source": "https://huggingface.co/google/gemma-3-270m-qat-q4_0-unquantized",
+      "revision": "934ddacdc9b97cfaae508da318214d5b7ed71856",
+      "parametersB": 0.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "google/reformer-crime-and-punishment",
+      "source": "https://huggingface.co/google/reformer-crime-and-punishment",
+      "revision": "8fcd50a33ea773f3bacf3fecdf193c9ca2c060ac",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 524288
+      }
+    },
+    {
+      "id": "google/vaultgemma-1b",
+      "source": "https://huggingface.co/google/vaultgemma-1b",
+      "revision": "f9624dafc1760cb2f6039e86e12055d6559d7abb",
+      "parametersB": 1.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Llama-2-7b-hf",
+      "source": "https://huggingface.co/meta-llama/Llama-2-7b-hf",
+      "revision": "01c7f73d771dfac7d292323805ebc428287df4f9",
+      "parametersB": 6.8,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Llama-3.1-8B",
+      "source": "https://huggingface.co/meta-llama/Llama-3.1-8B",
+      "revision": "d04e592bb4f6aa9cfee91e2e20afa771667e1d4b",
+      "parametersB": 8.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Llama-3.1-8B-Instruct",
+      "source": "https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct",
+      "revision": "0e9e39f249a16976918f6564b8830bc894c89659",
+      "parametersB": 8.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Llama-3.2-1B",
+      "source": "https://huggingface.co/meta-llama/Llama-3.2-1B",
+      "revision": "4e20de362430cd3b72f300e6b0f18e50e7166e08",
+      "parametersB": 1.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Llama-3.2-1B-Instruct",
+      "source": "https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct",
+      "revision": "9213176726f574b556790deb65791e0c5aa438b6",
+      "parametersB": 1.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Llama-3.2-3B-Instruct",
+      "source": "https://huggingface.co/meta-llama/Llama-3.2-3B-Instruct",
+      "revision": "0cb88a4f764b7a12671c53f0838cd831a0843b95",
+      "parametersB": 3.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Llama-3.3-70B-Instruct",
+      "source": "https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct",
+      "revision": "6f6073b423013f6a7d4d9f39144961bfbfbc386b",
+      "parametersB": 70.6,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "meta-llama/Meta-Llama-3-8B-Instruct",
+      "source": "https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct",
+      "revision": "8afb486c1db24fe5011ec46dfbe5b5dccdb575c2",
+      "parametersB": 8.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "microsoft/DialoGPT-medium",
+      "source": "https://huggingface.co/microsoft/DialoGPT-medium",
+      "revision": "7b40bb0f92c45fefa957d088000d8648e5c7fa33",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "microsoft/HARC",
+      "source": "https://huggingface.co/microsoft/HARC",
+      "revision": "460119b86dd42befebd61b9dbd856c5c748ceedb",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": null
+      }
+    },
+    {
+      "id": "microsoft/HARC-Llama-3.1-8B-Instruct",
+      "source": "https://huggingface.co/microsoft/HARC-Llama-3.1-8B-Instruct",
+      "revision": "c6f259492584684291e40413b698a2e4464f3899",
+      "parametersB": 8.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "microsoft/HARC-Qwen2.5-7B-Instruct",
+      "source": "https://huggingface.co/microsoft/HARC-Qwen2.5-7B-Instruct",
+      "revision": "f650ffae020ad9cfd957d5a341750226843ae89e",
+      "parametersB": 7.7,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "microsoft/MagenticBrain",
+      "source": "https://huggingface.co/microsoft/MagenticBrain",
+      "revision": "db8eb9340a90eaa4424dd13067373d1f9e8887f7",
+      "parametersB": 14.8,
+      "defaults": {
+        "precision": "32",
+        "contextTokens": 40960
+      }
+    },
+    {
+      "id": "microsoft/phi-2",
+      "source": "https://huggingface.co/microsoft/phi-2",
+      "revision": "810d367871c1d460086d9f82db8696f2e0a0fcd0",
+      "parametersB": 2.8,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 2048
+      }
+    },
+    {
+      "id": "microsoft/Phi-3-mini-128k-instruct",
+      "source": "https://huggingface.co/microsoft/Phi-3-mini-128k-instruct",
+      "revision": "f3c06aed622e14ca0abf5115094e4fc9a9948f36",
+      "parametersB": 3.9,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "microsoft/Phi-3-mini-4k-instruct",
+      "source": "https://huggingface.co/microsoft/Phi-3-mini-4k-instruct",
+      "revision": "f39ac1d28e925b323eae81227eaba4464caced4e",
+      "parametersB": 3.9,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 4096
+      }
+    },
+    {
+      "id": "microsoft/Phi-3.5-mini-instruct",
+      "source": "https://huggingface.co/microsoft/Phi-3.5-mini-instruct",
+      "revision": "2fe192450127e6a83f7441aef6e3ca586c338b77",
+      "parametersB": 3.9,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "microsoft/Phi-3.5-MoE-instruct",
+      "source": "https://huggingface.co/microsoft/Phi-3.5-MoE-instruct",
+      "revision": "43688451b462a3351d8580625ebe1931adb3986d",
+      "parametersB": 41.9,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "microsoft/phi-4",
+      "source": "https://huggingface.co/microsoft/phi-4",
+      "revision": "2db69c1c3e91a05d2c64a3185acfbaf36f744e25",
+      "parametersB": 14.7,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 16384
+      }
+    },
+    {
+      "id": "microsoft/Phi-4-mini-instruct",
+      "source": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+      "revision": "cfbefacb99257ffa30c83adab238a50856ac3083",
+      "parametersB": 3.9,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "mistralai/Mistral-7B-Instruct-v0.1",
+      "source": "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1",
+      "revision": "ec5deb64f2c6e6fa90c1abf74a91d5c93a9669ca",
+      "parametersB": 7.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "mistralai/Mistral-7B-Instruct-v0.2",
+      "source": "https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2",
+      "revision": "63a8b081895390a26e140280378bc85ec8bce07a",
+      "parametersB": 7.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "mistralai/Mistral-7B-v0.1",
+      "source": "https://huggingface.co/mistralai/Mistral-7B-v0.1",
+      "revision": "27d67f1b5f57dc0953326b2601d68371d40ea8da",
+      "parametersB": 7.3,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "openai/circuit-sparsity",
+      "source": "https://huggingface.co/openai/circuit-sparsity",
+      "revision": "ebf2603cfe24e5c09e31169d9e34a9fd3d15230c",
+      "parametersB": 0.5,
+      "defaults": {
+        "precision": "32",
+        "contextTokens": 1024
+      }
+    },
+    {
+      "id": "openai/gpt-oss-120b",
+      "source": "https://huggingface.co/openai/gpt-oss-120b",
+      "revision": "b5c939de8f754692c1647ca79fbf85e8c1e70f8a",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "openai/gpt-oss-20b",
+      "source": "https://huggingface.co/openai/gpt-oss-20b",
+      "revision": "6cee5e81ee83917806bbde320786a8fb61efebee",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-120b",
+      "source": "https://huggingface.co/openai/gpt-oss-safeguard-120b",
+      "revision": "3c7391182603991a904031244e7822488c67796d",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "openai/gpt-oss-safeguard-20b",
+      "source": "https://huggingface.co/openai/gpt-oss-safeguard-20b",
+      "revision": "8a11e17b25c973a24099d4016bf2e17dd7ec1574",
+      "parametersB": null,
+      "defaults": {
+        "precision": "unknown",
+        "contextTokens": 131072
+      }
+    },
+    {
+      "id": "Qwen/Qwen-AgentWorld-35B-A3B",
+      "source": "https://huggingface.co/Qwen/Qwen-AgentWorld-35B-A3B",
+      "revision": "60d2b0434a53d2e62a7c00a489586815d94ebffb",
+      "parametersB": 34.7,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 262144
+      }
+    },
+    {
+      "id": "Qwen/Qwen2.5-0.5B-Instruct",
+      "source": "https://huggingface.co/Qwen/Qwen2.5-0.5B-Instruct",
+      "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+      "parametersB": 0.5,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "Qwen/Qwen2.5-1.5B-Instruct",
+      "source": "https://huggingface.co/Qwen/Qwen2.5-1.5B-Instruct",
+      "revision": "989aa7980e4cf806f80c7fef2b1adb7bc71aa306",
+      "parametersB": 1.6,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "Qwen/Qwen2.5-3B-Instruct",
+      "source": "https://huggingface.co/Qwen/Qwen2.5-3B-Instruct",
+      "revision": "aa8e72537993ba99e69dfaafa59ed015b17504d1",
+      "parametersB": 3.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "Qwen/Qwen2.5-7B-Instruct",
+      "source": "https://huggingface.co/Qwen/Qwen2.5-7B-Instruct",
+      "revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+      "parametersB": 7.7,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 32768
+      }
+    },
+    {
+      "id": "Qwen/Qwen3-0.6B",
+      "source": "https://huggingface.co/Qwen/Qwen3-0.6B",
+      "revision": "c1899de289a04d12100db370d81485cdf75e47ca",
+      "parametersB": 0.8,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 40960
+      }
+    },
+    {
+      "id": "Qwen/Qwen3-32B",
+      "source": "https://huggingface.co/Qwen/Qwen3-32B",
+      "revision": "9216db5781bf21249d130ec9da846c4624c16137",
+      "parametersB": 32.8,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 40960
+      }
+    },
+    {
+      "id": "Qwen/Qwen3-4B",
+      "source": "https://huggingface.co/Qwen/Qwen3-4B",
+      "revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+      "parametersB": 4.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 40960
+      }
+    },
+    {
+      "id": "Qwen/Qwen3-8B",
+      "source": "https://huggingface.co/Qwen/Qwen3-8B",
+      "revision": "b968826d9c46dd6066d109eabc6255188de91218",
+      "parametersB": 8.2,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 40960
+      }
+    },
+    {
+      "id": "Qwen/Qwen3.8-2.4T-A95B",
+      "source": "https://huggingface.co/Qwen/Qwen3.8-2.4T-A95B",
+      "revision": "207bd685a7e3696cfaff12ded7c6a7ea0f88c996",
+      "parametersB": null,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 262144
+      }
+    },
+    {
+      "id": "Qwen/WebWorld-32B",
+      "source": "https://huggingface.co/Qwen/WebWorld-32B",
+      "revision": "e7fceedc8713450842f9bc9b122c1759c40bcc5b",
+      "parametersB": 0.1,
+      "defaults": {
+        "precision": "16",
+        "contextTokens": 40960
+      }
+    }
+  ]
+}

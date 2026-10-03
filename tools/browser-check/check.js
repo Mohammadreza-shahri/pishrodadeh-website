@@ -37,6 +37,11 @@ const checkHeader = name => {
 try {
   for (let i=0;i<60&&!q('[data-product-type="servers"]');i++)await sleep(100);
   ok('product chooser opens first with server, storage and GPU',all('[data-product-type]').length===3);
+  if (innerWidth >= 820) {
+    await document.fonts.ready;
+    const lead = q('.product-intro .hero-lead');
+    ok('chooser introduction fits one desktop line',lead.getBoundingClientRect().height<=parseFloat(getComputedStyle(lead).lineHeight)+1);
+  }
   checkHeader('product chooser');
   q('[data-product-type="servers"] button').click();
   // 1. App boots and the catalog loads.
@@ -260,7 +265,63 @@ try {
   const serverDraftBeforeGPU = localStorage.getItem('aria-configurator-v3');
   q('[data-product-type="gpu"] button').click();
   for(let i=0;i<60&&!q('.gpu-stepper');i++)await sleep(100);
+  ok('GPU entry asks use case before model size',all('[data-gpu-purpose]').length===11&&!q('.gpu-discovery'));
+  const {gpuPurposes}=await import('./gpu-purposes.js');
+  for (const purpose of gpuPurposes) {
+    q('[data-gpu-purpose="'+purpose.id+'"]').click();
+    if (q('#gpu-task')?.value==='llm') {
+      q('#gpu-task').value='general';q('#gpu-task').dispatchEvent(new Event('change',{bubbles:true}));
+    }
+    ok(purpose.id+' has workload-specific discovery, not LLM fields',
+      purpose.questions.every(key=>q('#gpu-'+key))&&!q('#gpu-parametersB')&&!q('#gpu-language-models'));
+    q('#gpu-softwareName').value='Example software';
+    q('#gpu-workloadDetails').value='Real workload details';
+    q('.gpu-discovery').requestSubmit();
+    const saved=JSON.parse(localStorage.getItem('aria-gpu-advisor-v1'));
+    ok(purpose.id+' persists explicit purpose and descriptions',
+      saved.requirements.useCase===purpose.id&&saved.requirements.softwareName==='Example software'&&saved.requirements.workloadDetails==='Real workload details');
+    ok(purpose.id+' leaves memory unknown without a measured peak',
+      !text('.gpu-estimate').includes('25%')&&all('.gpu-metrics>div').length===1);
+    ok(purpose.id+' shortlist respects graphics/encoding capability',
+      all('.gpu-card').length===(['vdi','render','video','twin'].includes(purpose.id)?4:6));
+    q('[data-gpu-id="nvidia-l4"] button').click();
+    const inquiry=new URL(q('[data-gpu-quote]').href).searchParams.get('text');
+    ok(purpose.id+' inquiry preserves workload details and unresolved application checks',
+      inquiry.includes('Example software')&&inquiry.includes('Real workload details')&&inquiry.includes('API'));
+    clickByText('.gpu-tools button','ویرایش نیاز');
+    q('[data-gpu-change-purpose]').click();
+    ok(purpose.id+' returns to use-case choice without horizontal overflow',
+      all('[data-gpu-purpose]').length===11&&document.documentElement.scrollWidth<=innerWidth+1);
+  }
+  q('[data-gpu-purpose="ai"]').click();
   ok('independent NVIDIA GPU entry opens',Boolean(q('.gpu-discovery'))&&text('.product-intro').includes('NVIDIA'));
+  const modelSnapshot = await fetch('./language-models.json').then(r=>r.json());
+  ok('original publisher model suggestions load',all('#gpu-language-models option').length===modelSnapshot.models.length);
+  const publishedModel = modelSnapshot.models.find(model=>model.id==='Qwen/Qwen3-32B');
+  for (const [key,value] of [['parametersB','8'],['runtimeGB','4'],['measuredGB','32'],['precision','16']]) {
+    const input=q('#gpu-'+key);input.value=value;input.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  const modelInput = q('#gpu-modelName');
+  modelInput.value = publishedModel.id;
+  modelInput.dispatchEvent(new Event('input',{bubbles:true}));
+  ok('choosing a publisher model autofills size, precision and context without blur',q('#gpu-parametersB').value===String(publishedModel.parametersB)&&q('#gpu-contextTokens').value===String(publishedModel.defaults.contextTokens)&&q('#gpu-precision').value===publishedModel.defaults.precision);
+  ok('selected model links to its publisher card',q('.gpu-model-source a')?.href===publishedModel.source);
+  ok('model source actions are not nested in the input label',!q('.gpu-model-label button')&&!q('.gpu-model-label a'));
+  ok('model selection clears stale memory measurements, not fabricated runtime defaults',q('#gpu-runtimeGB').value===''&&q('#gpu-measuredGB').value==='');
+  q('#gpu-parametersB').value='7';q('#gpu-parametersB').dispatchEvent(new Event('change',{bubbles:true}));
+  q('#gpu-precision').value='8';q('#gpu-precision').dispatchEvent(new Event('change',{bubbles:true}));
+  modelInput.dispatchEvent(new Event('change',{bubbles:true}));
+  ok('published defaults stay editable without resetting the same model',q('#gpu-parametersB').value==='7'&&q('#gpu-precision').value==='8');
+  const secondModel=modelSnapshot.models.find(model=>model.id==='Qwen/Qwen3-8B');
+  modelInput.value=secondModel.id;
+  q('.gpu-discovery').requestSubmit();
+  const unblurred=JSON.parse(localStorage.getItem('aria-gpu-advisor-v1')).requirements;
+  ok('Enter on a different listed model applies its own defaults, not stale sizes',unblurred.parametersB===secondModel.parametersB&&unblurred.precision===secondModel.defaults.precision&&unblurred.contextTokens===secondModel.defaults.contextTokens);
+  clickByText('.gpu-tools button','ویرایش نیازها');
+  for (const key of ['modelName','parametersB','contextTokens']) {
+    const input=q('#gpu-'+key);input.value='';input.dispatchEvent(new Event('change',{bubbles:true}));
+  }
+  q('#gpu-precision').value='unknown';q('#gpu-precision').dispatchEvent(new Event('change',{bubbles:true}));
   checkHeader('GPU discovery');
   q('.gpu-discovery').requestSubmit();
   ok('unknown GPU needs remain exploratory',all('.gpu-card').length===6&&!text('.gpu-card').includes('گزینه شروع بررسی'));
@@ -279,7 +340,17 @@ try {
   ok('GPU weights and memory budget are exact',text('.gpu-metrics').includes('۱۶ GB')&&text('.gpu-metrics').includes('۲۴ GB'));
   ok('model names render as text, not HTML',text('.gpu-model-name').includes('<img')&&!q('.gpu-model-name img'));
   ok('NVIDIA sources are linked',all('.gpu-card>a').filter(a=>a.href.startsWith('https://www.nvidia.com/')).length===6);
+  const photos = all('.gpu-photo img');
+  ok('every GPU has its own official photo, not a generic drawing',photos.length===6&&new Set(photos.map(image=>image.src)).size===6&&!q('.gpu-graphic'));
+  ok('GPU photos use the same frame and preserve the whole product',photos.every(image=>image.alt.includes('NVIDIA')&&getComputedStyle(image).objectFit==='contain')&&all('.gpu-photo').every(frame=>Math.abs(frame.getBoundingClientRect().height-180)<1));
+  photos[0].dispatchEvent(new Event('error'));
+  ok('failed photo remains an explicit official-source link',photos[0].hidden&&!q('.gpu-photo-failed').hidden&&q('.gpu-photo a').href.startsWith('https://www.pny.com/'));
   q('[data-gpu-id="nvidia-l4"] button').click();
+  ok('GPU selection offers WhatsApp or server configuration as separate choices',Boolean(q('[data-gpu-quote]'))&&Boolean(q('[data-gpu-servers]')));
+  q('.gpu-card.selected>button').click();
+  ok('selected GPU action focuses next-step choices',document.activeElement===q('.gpu-sales h2'));
+  q('[data-gpu-servers]').click();
+  ok('server choice reveals and focuses optional matching proposals',document.activeElement===q('.gpu-server-section h2')&&all('.gpu-server-card').length===6);
   ok('selected GPU and sales inquiry share the available layout',Boolean(q('.gpu-solution-row'))&&getComputedStyle(q('.gpu-selected-grid')).gridTemplateColumns.split(' ').length===1);
   ok('GPU selection suggests source-listed HPE servers optionally',all('.gpu-server-card').length===6);
   ok('ML350 accessory requirements remain visible',text('[data-model-id="16912"]').includes('P47219-B21')&&text('[data-model-id="16912"]').includes('P47902-B21'));
@@ -328,8 +399,19 @@ try {
   gpuAnswer('parametersB',70);gpuAnswer('precision','8');gpuAnswer('runtimeGB',10);
   q('.gpu-discovery').requestSubmit();
   q('[data-gpu-id="nvidia-h200-nvl"] button').click();
-  ok('GPU outside HPE catalog still supports standalone inquiry',!q('.gpu-server-card')&&Boolean(q('[data-gpu-quote]'))&&text('.gpu-server-section').includes('not proof of incompatibility'));
-  ok('unlisted GPU cannot trigger HPE handoff',!q('.gpu-server-section>.button'));
+  ok('H200 has source-listed HPE platforms without inventing encoded configurations',all('.gpu-source-platform').length===3&&Boolean(q('[data-gpu-quote]'))&&text('.gpu-server-section').includes('component catalog'));
+  ok('source-listed platforms without parts cannot trigger HPE handoff',!q('.gpu-server-section>.button'));
+  clickByText('.gpu-tools button','Edit needs');
+  gpuAnswer('parametersB',32);gpuAnswer('precision','16');gpuAnswer('runtimeGB',8);
+  q('.gpu-discovery').requestSubmit();
+  q('[data-gpu-id="nvidia-rtx-pro-6000-server"] button').click();
+  q('[data-gpu-servers]').click();
+  ok('RTX PRO 6000 lists exact supported HPE generations, not unsupported DL580',all('.gpu-source-platform').length===5&&text('.gpu-server-section').includes('DL380a Gen12')&&!text('.gpu-server-section').includes('DL580')&&!text('.gpu-server-section').includes('DL380a Gen11'));
+  const platformQuote=new URL(q('.gpu-source-platform>a').href);
+  ok('platform inquiry carries selected server, exact HPE part and unresolved checks',platformQuote.hostname==='wa.me'&&platformQuote.searchParams.get('text').includes('DL380a Gen12')&&platformQuote.searchParams.get('text').includes('S6A73C')&&platformQuote.searchParams.get('text').includes('still need review'));
+  q('.gpu-stepper button:nth-child(2)').click();
+  q('[data-gpu-id="nvidia-h100-nvl"] button').click();
+  ok('unlisted GPU still has an honest standalone path',!q('.gpu-server-card')&&Boolean(q('[data-gpu-quote]'))&&text('.gpu-server-section').includes('not proof of incompatibility'));
   checkHeader('GPU standalone results');
   clickByText('.gpu-tools button','Edit needs');
   gpuAnswer('parametersB','');
@@ -345,6 +427,74 @@ try {
   q('.stepper button:nth-child(4)').click();
   ok('unknown GPU memory stays unresolved after server handoff',text('.review-grid').includes('full model memory requirement is unresolved')&&!q('.stepper button:nth-child(3)').classList.contains('done'));
   window.confirm=originalConfirm;
+  clickByText('.header-actions button','Change product');
+  q('[data-product-type="gpu"] button').click();
+  for(let i=0;i<60&&!q('.gpu-stepper');i++)await sleep(100);
+  clickByText('.gpu-tools button','Edit needs');q('[data-gpu-change-purpose]').click();
+  q('[data-gpu-purpose="hpc"]').click();
+  gpuAnswer('computeType','fp64');q('.gpu-discovery').requestSubmit();
+  ok('FP64 UI shortlists only scientific compute cards',all('.gpu-card').length===2&&all('.gpu-card').every(card=>/h100|h200/.test(card.dataset.gpuId)));
+  clickByText('.gpu-tools button','Edit needs');q('[data-gpu-change-purpose]').click();
+  q('[data-gpu-purpose="service"]').click();
+  gpuAnswer('sharing','mig');q('.gpu-discovery').requestSubmit();
+  ok('MIG UI excludes non-MIG GPUs and retains sharing review',all('.gpu-card').length===3&&text('.gpu-limitations').includes('MIG is not vGPU'));
+  clickByText('.gpu-tools button','Edit needs');q('[data-gpu-change-purpose]').click();
+  q('[data-gpu-purpose="vdi"]').click();
+  gpuAnswer('sharing','vgpu');gpuAnswer('softwareName','=VMware test');
+  gpuAnswer('workloadDetails','CAD desktop');gpuAnswer('measuredGB',12);gpuAnswer('concurrency',8);
+  q('.gpu-discovery').requestSubmit();
+  ok('VDI uses measured per-GPU memory without LLM weights',all('.gpu-metrics>div').length===1&&text('.gpu-metrics').includes('15 GB'));
+  q('[data-gpu-id="nvidia-l4"] button').click();
+  window.confirm=()=>true;q('.gpu-server-section>.button').click();
+  for(let i=0;i<60&&!q('.server-card');i++)await sleep(100);
+  all('.server-card').find(card=>card.textContent.includes('ML350')).querySelector('.server-actions button').click();
+  const vdiDraft=JSON.parse(localStorage.getItem('aria-configurator-v3'));
+  ok('VDI handoff is virtualization, not language-model training',vdiDraft.state.workload==='virtualization'&&vdiDraft.state.requirements.gpuGB===15&&vdiDraft.gpuProposal.requirements.useCase==='vdi');
+  q('.stepper button:nth-child(4)').click();
+  ok('server review preserves application and licensing checks',text('.page').includes('vGPU version')&&text('.review-grid').includes('15 GB'));
+  const vdiExports=[];
+  HTMLAnchorElement.prototype.click=function(){vdiExports.push(fetch(this.href).then(response=>response.text()));};
+  clickByText('.review-grid button','Download JSON report');clickByText('.review-grid button','Download BOM');
+  HTMLAnchorElement.prototype.click=serverAnchorClick;
+  const vdiJSON=JSON.parse(await vdiExports[0]),vdiCSV=await vdiExports[1];
+  ok('VDI JSON retains purpose, software and unverified licenses',vdiJSON.gpu_advisor_proposal.routing.server_workload==='virtualization'&&vdiJSON.gpu_advisor_proposal.requirements.softwareName==='=VMware test'&&vdiJSON.gpu_advisor_proposal.limitations.includes('virtualizationReview'));
+  ok('VDI CSV keeps workload context and remains formula-safe',vdiCSV.includes('CAD desktop')&&vdiCSV.includes('VDI and virtual workstations')&&vdiCSV.includes("'" + '=VMware test'));
+  const originalOpen=window.open;let vdiWhatsApp='';
+  window.open=url=>{vdiWhatsApp=url;return null;};
+  q('#quote-name').value='Test customer';q('#quote-mobile').value='09121234567';
+  q('#quote-name').form.requestSubmit();
+  window.open=originalOpen;
+  const vdiMessage=new URL(vdiWhatsApp).searchParams.get('text');
+  ok('server WhatsApp keeps VDI purpose, software and licensing uncertainty',vdiMessage.includes('VDI and virtual workstations')&&vdiMessage.includes('=VMware test')&&vdiMessage.includes('vGPU version')&&vdiMessage.includes('https://www.nvidia.com/'));
+  window.confirm=originalConfirm;
+  const restoreContext={lang:'en',onHome(){},onLanguage(){},isCurrent:()=>true};
+  const {mount:restoreGPU}=await import('./gpu-ui.js?purpose-restore-test');
+  await restoreGPU(restoreContext);
+  ok('new GPU draft restores its VDI purpose and selected card',text('.gpu-route-note').includes('VDI and virtual workstations')&&q('.gpu-card.selected')?.dataset.gpuId==='nvidia-l4');
+  const legacyRequirements={workload:'inference',modelName:'Legacy model',parametersB:8,precision:'16',
+    concurrency:5,contextTokens:8192,runtimeGB:4,measuredGB:null,replicas:1};
+  localStorage.setItem('aria-gpu-advisor-v1',JSON.stringify({version:1,step:0,requirements:legacyRequirements,gpuId:null}));
+  const {mount:restoreLegacyGPU}=await import('./gpu-ui.js?legacy-restore-test');
+  await restoreLegacyGPU(restoreContext);
+  ok('legacy GPU draft restores into AI language-model discovery',q('#gpu-parametersB')?.value==='8'&&q('#gpu-task')?.value==='llm'&&!q('.gpu-purpose-grid'));
+  localStorage.setItem('aria-gpu-advisor-v1',JSON.stringify({version:1,step:1,requirements:{...legacyRequirements,useCase:'bad'},gpuId:'nvidia-l4'}));
+  const {mount:restoreInvalidGPU}=await import('./gpu-ui.js?invalid-purpose-restore-test');
+  await restoreInvalidGPU(restoreContext);
+  ok('invalid restored use case is reported and reset safely',all('[data-gpu-purpose]').length===11&&text('.storage-alert').includes('GPU draft was invalid'));
+  const smallGPU={...vdiDraft,state:{...vdiDraft.state,step:4,requirements:{...vdiDraft.state.requirements,gpuGB:45}},
+    gpuProposal:{...vdiDraft.gpuProposal,gpuId:'nvidia-l40s',requirements:{...vdiDraft.gpuProposal.requirements,measuredGB:36}}};
+  localStorage.setItem('aria-configurator-v3',JSON.stringify(smallGPU));
+  const {mount:restoreSmallGPU}=await import('./app.js?small-gpu-restore-test');
+  await restoreSmallGPU(restoreContext);
+  ok('non-LLM handoff flags replacing its GPU with insufficient memory',text('.review-grid').includes('This GPU has less memory than the workload target.')&&!q('.stepper button:nth-child(3)').classList.contains('done'));
+  localStorage.setItem('aria-configurator-v3',JSON.stringify({...smallGPU,state:{...smallGPU.state,selected:{...smallGPU.state.selected,gpu:[]}}}));
+  const {mount:restoreMissingGPU}=await import('./app.js?missing-gpu-restore-test');
+  await restoreMissingGPU(restoreContext);
+  let missingReport;
+  HTMLAnchorElement.prototype.click=function(){missingReport=fetch(this.href).then(response=>response.json());};
+  clickByText('.review-grid button','Download JSON report');
+  HTMLAnchorElement.prototype.click=serverAnchorClick;
+  ok('non-LLM handoff cannot silently drop its required GPU',(await missingReport).unresolved.missing.includes('This platform requires a GPU.')&&!q('.stepper button:nth-child(3)').classList.contains('done'));
   ok('no horizontal page overflow',document.documentElement.scrollWidth<=innerWidth+1,document.documentElement.scrollWidth+' / '+innerWidth);
 } catch (error) {
   ok('harness completed without throwing', false, `${error && error.message} :: ${error && error.stack}`);

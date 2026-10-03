@@ -19,6 +19,7 @@ import {officialProductPages} from './server-links.js';
 import {salesWhatsApp} from './sales-contact.js';
 import {strings as gpuStrings} from './gpu-copy.js';
 import {validateGPUProposal, gpuServerCandidates, gpuCandidates, estimateGPUMemory, gpuAdvisorReport} from './gpu-advisor.js';
+import {gpuServerWorkload, isLanguageWorkload} from './gpu-purposes.js';
 
 const STORAGE_KEY = 'aria-configurator-v3';
 const STORAGE_VERSION = 1;
@@ -284,6 +285,10 @@ function gpuMemoryUnresolved() {
   if (!gpuProposal) return false;
   const estimate = estimateGPUMemory(gpuProposal.requirements);
   return estimate.targetGB === null || estimate.unresolved.includes('runtimeUnknown');
+}
+function gpuMemoryMessage() {
+  return gpuProposal && !isLanguageWorkload(gpuProposal.requirements)
+    ? gpuStrings[lang].workloadMemoryUnknown : t('gpuUnknownMemory');
 }
 
 function ruleText(rule) {
@@ -802,7 +807,7 @@ function serversPage(root) {
     const gpu = gpuCandidates(data, gpuProposal.requirements).find(item => item.id === gpuProposal.gpuId);
     const banner = callout(t('gpuProposalTitle'), `${gpu.name} × ${number(gpuProposal.requirements.replicas)} — ${t('gpuProposalNote')}`, 'info');
     banner.classList.add('gpu-handoff');
-    if (gpuMemoryUnresolved()) banner.append(el('p', t('gpuUnknownMemory'), 'small'));
+    if (gpuMemoryUnresolved()) banner.append(el('p', gpuMemoryMessage(), 'small'));
     banner.append(btn(t('gpuNormalFlow'), () => {gpuProposal = null; render();}, 'ghost'));
     root.append(banner);
   }
@@ -929,6 +934,10 @@ function helperCopy(option) {
 function issueState() {
   const values = stats(state, data);
   const direct = directConflicts(state, data).map(item => ({...item, message: conflictText(item.key)}));
+  if (gpuProposal && !state.workload.startsWith('ai') && chosen('gpu') &&
+      values.gpuMemory < state.requirements.gpuGB) {
+    direct.push({key:'gpuMemory', category:'gpu', message:conflictText('gpuMemory')});
+  }
   const findings = activeFindings(state, data).map(item => ({...item, message: ruleText(item)}));
   const missing = [];
   const missingActions = [];
@@ -941,7 +950,7 @@ function issueState() {
     missing.push(t('missingNIC'));
     missingActions.push('nic');
   }
-  if (state.model_id === '16913' && !chosen('gpu')) {
+  if ((state.model_id === '16913' || gpuProposal) && !chosen('gpu')) {
     missing.push(t('missingGPU'));
     missingActions.push('gpu');
   }
@@ -950,11 +959,11 @@ function issueState() {
     missingActions.push('storage');
   }
   const workloadGaps = [];
-  if (gpuMemoryUnresolved()) workloadGaps.push(t('gpuUnknownMemory'));
+  if (gpuMemoryUnresolved()) workloadGaps.push(gpuMemoryMessage());
   if (chosen('memory') && values.memory < state.requirements.ramGB) workloadGaps.push(t('ramBelow'));
   if (chosen('cpu') && values.cores < state.requirements.cores) workloadGaps.push(t('coresBelow'));
   if (!state.workload.startsWith('ai') && chosen('storage') && values.usable != null && values.usable / 1000 < state.requirements.storageTB) workloadGaps.push(t('storageBelow'));
-  if (state.workload.startsWith('ai') && chosen('gpu') && values.gpuMemory < state.requirements.gpuGB) workloadGaps.push(t('gpuMemoryTooLow'));
+  if ((state.workload.startsWith('ai') || gpuProposal) && chosen('gpu') && values.gpuMemory < state.requirements.gpuGB) workloadGaps.push(t('gpuMemoryTooLow'));
   return {
     values,
     direct,
@@ -1295,7 +1304,7 @@ function summaryPanel(issues, {mobile}) {
     [chosen('cpu') ? values.cores : t('notSelected'), '', t('physicalCores')],
     [chosen('memory') ? values.memory : t('notSelected'), chosen('memory') ? 'GB' : '', t('installedRAM')],
     [chosen('storage') ? values.usable == null ? t('unknownValue') : values.usable / 1000 : t('notSelected'), chosen('storage') && values.usable != null ? 'TB' : '', t('usableStorage')],
-    [chosen('gpu') ? values.gpuMemory : state.workload.startsWith('ai') || state.model_id === '16913' ? t('notSelected') : t('notApplicable'), chosen('gpu') ? 'GB' : '', t('gpuMemory')],
+    [chosen('gpu') ? values.gpuMemory : state.workload.startsWith('ai') || gpuProposal || state.model_id === '16913' ? t('notSelected') : t('notApplicable'), chosen('gpu') ? 'GB' : '', t('gpuMemory')],
   ]) {
     const metric = el('div', null, 'summary-metric');
     metric.append(el('strong', `${typeof value === 'number' ? number(value) : value} ${unit}`), el('small', label));
@@ -1310,7 +1319,7 @@ function summaryPanel(issues, {mobile}) {
     if (option) {
       value.append(el('strong', `${number(quantity(state, option))} × ${partTitle(option)}`), bidi(option.sku, 'summary-code'));
     } else {
-      value.append(el('span', cat === 'gpu' && !state.workload.startsWith('ai') && state.model_id !== '16913' ? t('notApplicable') : t('notSelected')));
+      value.append(el('span', cat === 'gpu' && !state.workload.startsWith('ai') && !gpuProposal && state.model_id !== '16913' ? t('notApplicable') : t('notSelected')));
     }
     const label = el('span', null, 'summary-category');
     label.append(icon(cat), el('span', t(cat)));
@@ -1409,11 +1418,11 @@ function reviewPage(root) {
     [issues.values.cores, state.requirements.cores, t('physicalCores'), '', 'coresBelow', Boolean(chosen('cpu'))],
   ];
   if (!state.workload.startsWith('ai')) fitRows.push([issues.values.usable == null ? null : issues.values.usable / 1000, state.requirements.storageTB, t('usableStorage'), 'TB', 'storageBelow', Boolean(chosen('storage'))]);
-  else fitRows.push([issues.values.gpuMemory, state.requirements.gpuGB, t('gpuMemory'), 'GB', 'gpuMemoryTooLow', Boolean(chosen('gpu')), gpuMemoryUnresolved()]);
+  if (state.workload.startsWith('ai') || gpuProposal) fitRows.push([issues.values.gpuMemory, state.requirements.gpuGB, t('gpuMemory'), 'GB', 'gpuMemoryTooLow', Boolean(chosen('gpu')), gpuMemoryUnresolved()]);
   for (const [actual, target, label, unit, key, selected, reviewOnly] of fitRows) {
     const passed = !reviewOnly && selected && actual != null && actual >= target;
     const status = reviewOnly ? t('unknown') : !selected ? t('notSelected') : actual == null ? t('unknownValue') : passed ? '✓' : t('unknown');
-    const message = reviewOnly ? t('gpuUnknownMemory') : !selected ? `${label}: ${t('notSelected')}` : actual == null ? `${label}: ${t('unknownValue')}` : passed ? `${label}: ${number(actual)} ${unit} / ${number(target)} ${unit}`.trim() : t(key);
+    const message = reviewOnly ? gpuMemoryMessage() : !selected ? `${label}: ${t('notSelected')}` : actual == null ? `${label}: ${t('unknownValue')}` : passed ? `${label}: ${number(actual)} ${unit} / ${number(target)} ${unit}`.trim() : t(key);
     fit.append(checkRow(status, message, passed ? 'blue' : 'amber'));
   }
   fit.append(callout(t('profileGuidance'), guidance()));
@@ -1546,9 +1555,25 @@ function exportJSON() {
   download(`ARIAMAN-${model().short.replaceAll(' ', '-')}.json`, JSON.stringify(exportPayload(), null, 2), 'application/json');
 }
 
+function gpuRequirementRows(report) {
+  const req = report.requirements, copy = gpuStrings[lang];
+  const fields = [[copy.purposeTitle, copy['purpose_' + req.useCase]]];
+  if (!isLanguageWorkload(req)) fields.push(
+    [copy.softwareName, req.softwareName || copy.unknown],
+    [copy.workloadDetails, req.workloadDetails || copy.unknown],
+    [copy.sharing, copy['sharing_' + req.sharing]],
+    [copy.computeType, copy['computeType_' + req.computeType]],
+    [copy.channels, req.channels ?? copy.unknown],
+    [copy.concurrency, req.concurrency ?? copy.unknown],
+    [copy.measuredGB, req.measuredGB ?? copy.unknown],
+  );
+  return fields;
+}
+
 function shareWhatsApp(contact) {
   const issues = issueState();
-  const unresolved = issues.missing.length + issues.direct.length + issues.findings.length;
+  const gpuReport = gpuProposal ? gpuAdvisorReport(data, gpuProposal.requirements, gpuProposal.gpuId) : null;
+  const unresolved = issues.missing.length + issues.direct.length + issues.findings.length + (gpuReport?.limitations.length || 0);
   const selections = selectedOptions(state, data);
   const text = [
     t('quoteMessageTitle'),
@@ -1565,9 +1590,15 @@ function shareWhatsApp(contact) {
     `${t('ramTarget')}: ${number(state.requirements.ramGB)} GB`,
     `${t('coreTarget')}: ${number(state.requirements.cores)}`,
     state.requirements.storageTB ? `${t('storageTarget')}: ${number(state.requirements.storageTB)} TB` : null,
-    state.workload.startsWith('ai') ? `${t('gpuTarget')}: ${number(state.requirements.gpuGB)} GB` : null,
+    state.workload.startsWith('ai') || gpuProposal ? `${t('gpuTarget')}: ${number(state.requirements.gpuGB)} GB` : null,
     selections.length ? t('quoteParts') : t('quoteNoParts'),
     ...selections.map(option => `- ${t(option.category)}: ${partTitle(option)} (${option.sku}) × ${number(quantity(state, option))}`),
+    ...(gpuReport ? [
+      `${t('gpuProposalTitle')}: ${gpuReport.selected.name}`,
+      ...gpuRequirementRows(gpuReport).map(([label, value]) => `${label}: ${value}`),
+      ...gpuReport.limitations.map(key => '- ' + gpuStrings[lang][key]),
+      gpuReport.selected.source,
+    ] : []),
     `${t('output')}: ${unresolved ? `${unresolved} ${t('unknown')}` : t('passed')}`,
     t('quoteReviewNotice'),
     window.location.href,
@@ -1590,6 +1621,7 @@ function exportCSV() {
     [t('limitations'), t('coverageNotice'), '', '', t('reviewRequired')],
     ...(gpuReport ? [
       [t('gpuProposalTitle'), gpuReport.selected.name, '', gpuReport.selected.quantity, t('reviewRequired')],
+      ...gpuRequirementRows(gpuReport).map(([label, value]) => [label, value, '', '', t('reviewRequired')]),
       ...gpuReport.limitations.map(key => [t('gpuProposalTitle'), gpuStrings[lang][key], '', '', t('reviewRequired')]),
     ] : []),
   ];
@@ -1666,9 +1698,19 @@ function render() {
   const root = layout();
   if (gpuProposal && state.step !== 2) {
     const proposalNotice = callout(t('gpuProposalTitle'), t('gpuProposalNote'), 'info');
+    if (!isLanguageWorkload(gpuProposal.requirements)) {
+      proposalNotice.append(el('p', gpuStrings[lang]['purpose_' + gpuProposal.requirements.useCase]));
+      const checks = el('details');
+      checks.append(el('summary', gpuStrings[lang].limitations));
+      const list = el('ul');
+      for (const key of estimateGPUMemory(gpuProposal.requirements).unresolved) {
+        list.append(el('li', gpuStrings[lang][key]));
+      }
+      checks.append(list); proposalNotice.append(checks);
+    }
     proposalNotice.append(btn(t('gpuNormalFlow'), () => {gpuProposal = null; render();}, 'ghost'));
     root.append(proposalNotice);
-    if (gpuMemoryUnresolved()) root.append(callout(t('reviewRequired'), t('gpuUnknownMemory'), 'warning'));
+    if (gpuMemoryUnresolved()) root.append(callout(t('reviewRequired'), gpuMemoryMessage(), 'warning'));
   }
   if (state.step === 1) workPage(root);
   if (state.step === 2) serversPage(root);
@@ -1700,7 +1742,7 @@ async function start() {
       const gpu = gpuCandidates(data, proposal.requirements).find(item => item.id === proposal.gpuId);
       const estimate = estimateGPUMemory(proposal.requirements);
       state = {...initial(), advisorMode:'advanced', step:2, visitedSteps:[1,2],
-        workload:proposal.requirements.workload === 'inference' ? 'ai_inference' : 'ai_training', workloadConfirmed:true,
+        workload:gpuServerWorkload(proposal.requirements), workloadConfirmed:true,
         requirements:{...initial().requirements, gpuGB:estimate.targetGB ?? gpu.usableGB}};
       gpuProposal = proposal; category = 'gpu'; page = 0; query = ''; showMobileSummary = false;
       owner.gpuRequest = null;

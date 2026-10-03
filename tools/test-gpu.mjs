@@ -3,11 +3,80 @@ import {readFile} from 'node:fs/promises';
 import {initialGPURequirements, validateGPURequirements, estimateGPUMemory,
   gpuCandidates, validateGPUProposal, gpuServerCandidates, gpuAdvisorReport} from '../dist/gpu-advisor.js';
 import {gpuCatalog} from '../dist/gpu-catalog.js';
+import {gpuPurposes, isLanguageWorkload, gpuServerWorkload} from '../dist/gpu-purposes.js';
 const data = JSON.parse(await readFile(new URL('../dist/catalog.json', import.meta.url), 'utf8'));
 let passed = 0;
 function test(name, action) {action(); passed++; console.log('PASS ' + name);}
 const req = {...initialGPURequirements(), parametersB:8, precision:'16', runtimeGB:4};
 const proposal = {version:1, requirements:req, gpuId:'nvidia-l4'};
+test('Legacy language-model requirements migrate without changing estimates or server mapping', () => {
+  const legacy = Object.fromEntries(Object.entries(req).filter(([key]) =>
+    !['useCase','task','softwareName','workloadDetails','channels','sharing','computeType'].includes(key)));
+  assert.deepEqual(validateGPURequirements(legacy), req);
+  assert.equal(estimateGPUMemory(legacy).targetGB, 24);
+  assert.equal(gpuServerWorkload(validateGPURequirements(legacy)), 'ai_inference');
+  assert.equal(gpuServerWorkload({...req, workload:'finetune'}), 'ai_training');
+});
+test('Unselected purpose cannot produce proposals or product reports', () => {
+  assert.throws(() => gpuCandidates(data,{...req,useCase:null}));
+  assert.throws(() => validateGPUProposal({...proposal,requirements:{...req,useCase:null}},data));
+  assert.throws(() => gpuAdvisorReport(data,{...req,useCase:null}));
+});
+for (const purpose of gpuPurposes) test(purpose.id + ' stays exploratory without real workload memory', () => {
+  const requirements = {...req, useCase:purpose.id, task:'general', softwareName:'Example software',
+    workloadDetails:'Dataset or scene details', concurrency:30, channels:10};
+  const estimate = estimateGPUMemory(requirements);
+  assert.equal(estimate.weightsGB,null); assert.equal(estimate.targetGB,null);
+  assert(estimate.unresolved.includes('workloadMemoryUnknown'));
+  assert(estimate.unresolved.includes('applicationReview'));
+  assert(gpuCandidates(data,requirements).every(candidate => candidate.fit === 'unknown'));
+  assert.equal(estimateGPUMemory({...requirements,measuredGB:20}).targetGB,25);
+  const report = gpuAdvisorReport(data,requirements,'nvidia-l4');
+  assert.equal(report.requirements.workloadDetails,'Dataset or scene details');
+  assert.equal(report.routing.purpose,purpose.id);
+  assert.equal(report.status,'technical_review_required');
+  assert(!report.routing.server_workload.startsWith('ai_'));
+  assert(report.limitations.includes('applicationReview'));
+  assert(gpuServerCandidates(data,{...proposal,requirements}).every(server => server.status !== 'verified'));
+});
+test('Only explicit language-model branches use parameter counts', () => {
+  for (const useCase of ['ai','generative','security']) {
+    assert(isLanguageWorkload({...req,useCase}));
+    assert.equal(estimateGPUMemory({...req,useCase}).targetGB,24);
+    assert.equal(estimateGPUMemory({...req,useCase,task:'general'}).targetGB,null);
+  }
+  assert.throws(() => validateGPURequirements({...req,useCase:'render',task:'llm'}));
+});
+test('Graphics and encoding routes do not shortlist large-memory compute-only cards', () => {
+  for (const useCase of ['vdi','render','video','twin']) {
+    const requirements = {...req,useCase,task:'general'};
+    assert.equal(gpuCandidates(data,requirements).length,4);
+    assert(!gpuCandidates(data,requirements).some(candidate => /h100|h200/.test(candidate.id)));
+    assert.throws(() => validateGPUProposal({...proposal,requirements,gpuId:'nvidia-h200-nvl'},data));
+    assert.throws(() => gpuAdvisorReport(data,requirements,'nvidia-h100-nvl'));
+  }
+});
+test('FP64 scientific compute and MIG sharing are distinct capability routes', () => {
+  const requirements = {...req,useCase:'hpc',task:'general',computeType:'fp64'};
+  assert.deepEqual(gpuCandidates(data,requirements).map(candidate => candidate.id),['nvidia-h100-nvl','nvidia-h200-nvl']);
+  const service = {...req,useCase:'service',task:'general',sharing:'mig'};
+  assert.equal(gpuCandidates(data,service).length,3);
+  assert(!gpuCandidates(data,service).some(candidate => /nvidia-l4/.test(candidate.id)));
+  assert(estimateGPUMemory(service).unresolved.includes('sharingReview'));
+  assert.equal(gpuCandidates(data,{...service,sharing:'vgpu'}).length,4);
+  assert.equal(gpuCandidates(data,{...service,sharing:'dedicated'}).length,6);
+  assert.equal(gpuCandidates(data,{...service,useCase:'vdi'}).length,1);
+  assert.equal(gpuServerWorkload(service),'virtualization');
+  assert.equal(gpuServerWorkload({...req,useCase:'analytics',task:'general'}),'database');
+  assert.equal(gpuServerWorkload({...req,useCase:'render',task:'general'}),'business');
+});
+test('Purpose descriptions and numeric fields are strictly validated', () => {
+  for (const patch of [{useCase:'anything'},{task:'anything'},{sharing:'anything'},{computeType:'anything'},
+    {softwareName:23},{softwareName:'a'.repeat(161)},{workloadDetails:'bad\ntext'},
+    {channels:0},{channels:1.5},{channels:10001},{channels:'10'}]) {
+    assert.throws(() => validateGPURequirements({...req,...patch}));
+  }
+});
 test('Unknown inputs remain exploratory', () => {
   const result = estimateGPUMemory(initialGPURequirements());
   assert.equal(result.targetGB, null); assert.equal(result.weightsGB, null);
@@ -68,11 +137,26 @@ test('HPE proposals use exact source-backed ordering parts and model scope', () 
   assert(gpuServerCandidates(data, {...proposal, gpuId:'nvidia-l40s'}).every(item => item.status !== 'verified'));
 });
 test('Unlisted NVIDIA GPUs remain standalone, not incompatible or HPE-qualified', () => {
-  assert.equal(gpuServerCandidates(data, {...proposal, gpuId:'nvidia-h200-nvl'}).length, 0);
-  const report = gpuAdvisorReport(data, req, 'nvidia-h200-nvl');
+  assert.equal(gpuServerCandidates(data, {...proposal, gpuId:'nvidia-h100-nvl'}).length, 0);
+  const report = gpuAdvisorReport(data, req, 'nvidia-h100-nvl');
   assert(report.limitations.includes('hpeUnlisted'));
   assert.equal(report.status, 'technical_review_required');
-  assert.equal(report.selected.memory_per_device_gb, 141);
+  assert.equal(report.selected.memory_per_device_gb, 94);
+});
+test('New HPE platform evidence never fabricates configurator parts or quantity approval', () => {
+  const report = gpuAdvisorReport(data, {...req, replicas:8}, 'nvidia-rtx-pro-6000-server');
+  assert.equal(report.servers.length, 0);
+  assert.equal(report.source_listed_platforms.length, 5);
+  assert(report.source_listed_platforms.some(platform => platform.name === 'HPE ProLiant DL380a Gen12'));
+  assert(!report.source_listed_platforms.some(platform => /DL580|DL380a Gen11/.test(platform.name)));
+  assert(report.source_listed_platforms.every(platform => platform.sku === 'S6A73C' &&
+    platform.source.startsWith('https://www.hpe.com/') && platform.status === 'technical_review_required' &&
+    platform.configurable === false && platform.quantity_verified === false && platform.quantity === 8));
+  assert(report.limitations.includes('hpePlatformReview'));
+  assert(!report.limitations.includes('hpeUnlisted'));
+  const h200 = gpuAdvisorReport(data, req, 'nvidia-h200-nvl');
+  assert.equal(h200.source_listed_platforms.length, 3);
+  assert(h200.source_listed_platforms.every(platform => platform.sku === 'S3U30C'));
 });
 test('Accessory requirements and unknown states survive planning', () => {
   const tower = gpuServerCandidates(data, proposal).find(item => item.model.id === '16912');

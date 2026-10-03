@@ -30,7 +30,62 @@ The initial catalog includes L4, L40, L40S, H100 NVL (94 GB per GPU, PCIe), H200
 These are product specifications, not confirmations of stock or HPE qualification.
 NVIDIA source links and the reviewed snapshot date are in `dist/gpu-catalog.js`.
 
-Inference screening uses parameter count × weight bits ÷ 8 (decimal GB), a heuristic
+Model-name suggestions come from the original Meta, Qwen, Google, Mistral,
+DeepSeek, Microsoft and OpenAI publishers on Hugging Face. The static snapshot in
+`dist/language-models.json` combines popular models and recent releases, links to
+each model card/license and records its repository revision. Custom names remain
+supported. Selecting a listed model automatically applies published unquantized total weight counts;
+they are rounded upward to 0.1 billion and include all MoE experts, not only active
+parameters. Published checkpoint precision and context ceiling are also filled
+from revision-pinned `config.json` and safetensors metadata. All remain editable.
+Quantized or unavailable counts/precision stay unknown. Gated/missing configs
+(HTTP 401/403/404) are logged and leave unavailable defaults null; other source
+failures abort the refresh. Context ceilings are not GPU memory or performance
+guarantees. Choosing a different listed model clears old runtime measurements,
+including when submitting a focused, unblurred name, but preserves user workload,
+concurrency and requested quantity.
+
+`refresh-language-models.yml` runs daily on GitHub Actions but refreshes only when
+the snapshot is at least three days old. `node tools/refresh-language-models.mjs
+--force` refreshes immediately. Every publisher feed must succeed and the entire
+snapshot must validate before an atomic replacement. Failures leave the last
+snapshot intact and fail the workflow visibly. Validated snapshots are committed
+to `main`, then dispatched through the full staging validation/deployment workflow;
+production is never dispatched. Protected-branch write restrictions must permit
+the workflow bot, otherwise publication fails visibly. The schedule becomes
+active only after this workflow is published on the default branch.
+
+GPU illustrations are replaced with exact-variant, three-quarter product photos
+linked directly from NVIDIA and the official PNY catalog. Every card uses the same
+dark frame and contained sizing; original angles and markings are not mirrored or
+altered. Clicking a photo opens its source. External images remain owned/hosted by
+their publishers; failed image loads show a source link instead of a misleading
+placeholder or another GPU.
+
+The GPU advisor starts with eleven use cases: AI/ML, generative AI, VDI,
+rendering, video, computer vision, security analytics, scientific compute,
+data analytics, digital twins and centralized shared GPUs. AI, generative AI and
+security offer a separate language-model branch; other workloads ask about the
+application, scene/data or video details, concurrency, sharing method or compute
+precision. Unknown answers stay unknown. Legacy version-1 drafts without purpose
+fields retain their AI/language-model path.
+
+`dist/gpu-purposes.js` defines this capability shortlist using the linked NVIDIA
+product specifications: graphics/VDI/rendering/twins and video encoding prioritize
+L4/L40/L40S/RTX PRO rather than treating H100/H200 as graphics or encoding cards.
+FP64-heavy scientific compute shortlists H100 NVL/H200 NVL; MIG requests exclude
+non-MIG L4/L40/L40S. These are advisory routes, not software, hypervisor, codec,
+profile or license qualification. Vision and image-generation paths can still
+explore compute cards. NVIDIA product pages remain linked from every candidate.
+
+Non-language workloads never reuse parameter-count arithmetic: only measured
+peak memory per GPU supplies a preliminary budget, with a 25% margin. Users,
+cameras, jobs and VM counts never invent memory pooling or GPU quantities.
+Purpose/details and unresolved application checks travel in reports and WhatsApp
+inquiries. Optional server handoff uses existing virtualization/database/business
+profiles for those workloads instead of mislabeling them as LLM training.
+
+Language-model inference screening uses parameter count × weight bits ÷ 8 (decimal GB), a heuristic
 25% weight margin, and any explicitly supplied runtime/KV memory. If runtime memory
 is blank, the result is an initial floor and stays unresolved. Fine-tuning and full
 training remain exploratory unless the buyer supplies a measured peak per GPU.
@@ -44,6 +99,21 @@ scope and encoded-rule checks. They remain **needs review**, not fully qualified
 Standalone cards with the same GPU name are not automatically HPE-qualified.
 GPUs absent from the HPE snapshot remain eligible for standalone sales inquiry;
 absence is not reported as proof of incompatibility.
+
+After selecting a GPU, explicit next-step choices offer WhatsApp pricing or
+matching server proposals. A selected-card action focuses these choices rather
+than silently repeating the selection. Source-listed configurable servers keep
+the existing optional, protected handoff into the server workflow.
+
+The official NVIDIA Accelerators for HPE QuickSpecs (`c04123180`, checked
+2026-10-03) additionally lists RTX PRO 6000 96GB `S6A73C` on DL380a Gen12,
+DL385 Gen11, DL380 Gen12, e930t and EL2000 EL240 Gen12, and H200 NVL `S3U30C`
+on the first three platforms. These are displayed separately with CPU-family
+scope, evidence, unresolved quantity/layout and per-platform WhatsApp inquiries.
+Their component catalogs are not encoded in this site yet, so they cannot
+automatically hand off or install guessed parts. Reports and inquiries retain
+this distinction. DL380a Gen11 and DL580 Gen12 are not inferred as supporting
+RTX PRO 6000 based only on chassis/PCIe capacity or similar model names.
 
 Continuing to server selection requires a deliberate click and confirmation before
 replacing an existing server draft. Selecting a server then carries the corresponding
@@ -107,6 +177,7 @@ node tools/test-i18n.mjs
 node tools/test-inert-rules.mjs
 node tools/test-gpu.mjs
 node tools/test-products.mjs
+node tools/test-language-models.mjs
 node tools/build-rule-i18n.mjs   # fails if the generated rule prose is stale
 node tools/serve.mjs 8123
 ```

@@ -2,7 +2,7 @@
 .product-main{padding-block:24px 44px;min-width:0}
 .product-intro{max-width:850px;padding:24px 0 36px}
 .product-intro h1{font-size:clamp(28px,4vw,46px);line-height:1.45;letter-spacing:-.025em;margin:10px 0 16px}
-.product-intro .hero-lead{max-width:740px}
+.product-intro .hero-lead{max-width:none}
 .product-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
 .product-card{border:1px solid #d9e3ed;border-radius:24px;background:linear-gradient(145deg,#fff,#f0f6fb);padding:36px;box-shadow:0 12px 36px #11243f08;display:flex;flex-direction:column;align-items:flex-start;gap:12px}
 .product-card:nth-child(2){background:linear-gradient(145deg,#fff,#edf8f5)}
@@ -99,6 +99,15 @@
 }
 
 .gpu-main{min-width:0}
+.gpu-purpose-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-block:20px}
+.gpu-purpose.button{display:flex;flex-direction:column;align-items:flex-start;text-align:start;gap:8px;white-space:normal;padding:20px;background:#fff}
+.gpu-purpose strong{font-size:17px}
+.gpu-purpose span{font-size:13px;font-weight:400;color:var(--muted);line-height:1.8}
+.gpu-purpose-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.gpu-route-note{padding:14px;border-inline-start:3px solid var(--teal);background:#edf8f5;line-height:1.9;border-radius:8px}
+.gpu-discovery>.field{max-width:560px}
+@media(max-width:1100px){.gpu-purpose-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){.gpu-purpose-grid{grid-template-columns:1fr}}
 .gpu-main h2{font-size:23px;line-height:1.6}
 .gpu-stepper,.gpu-tools{display:flex;gap:10px;flex-wrap:wrap;margin-block:0 24px}
 .gpu-stepper .button{min-height:44px}
@@ -111,6 +120,12 @@
 .gpu-workload.selected{border-color:var(--teal);background:#edf8f5;box-shadow:inset 0 0 0 1px var(--teal)}
 .gpu-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 .gpu-fields .field{min-width:0}
+.gpu-model-field{grid-column:span 2}
+.gpu-model-label{display:flex;flex-direction:column;gap:5px;min-width:0}
+.gpu-model-field input{direction:ltr;text-align:start}
+.gpu-model-source{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;line-height:1.8}
+.gpu-model-source a{overflow-wrap:anywhere}
+.gpu-model-source .button{font-size:12px;min-height:44px;white-space:normal}
 .gpu-fields input,.gpu-fields select{width:100%;min-width:0;min-height:46px;padding:10px;border:1px solid var(--line-strong);border-radius:10px;background:#fff;color:var(--navy);font:inherit}
 .gpu-fields input[type=number]{max-width:160px;direction:ltr;font-variant-numeric:tabular-nums}
 .gpu-fields input:focus-visible,.gpu-fields select:focus-visible{outline:3px solid #00765a55;outline-offset:2px}
@@ -136,7 +151,12 @@
 .gpu-card>.button{margin-top:auto;white-space:normal;min-height:44px}
 .gpu-card .chip{white-space:normal}
 .gpu-card>a{font-size:13px}
-.gpu-graphic{width:100%;height:100px;stroke:#00765a;stroke-width:2;fill:#e7f1ee;stroke-linejoin:round}
+.gpu-photo{width:100%;height:180px;background:#0d0f0e;border-radius:12px;overflow:hidden}
+.gpu-photo a{display:flex;width:100%;height:100%;align-items:center;justify-content:center;color:#fff}
+.gpu-photo img{width:100%;height:100%;object-fit:contain}
+.gpu-photo-cutout{transform:scale(1.4)}
+.gpu-photo img[hidden],.gpu-photo-failed[hidden]{display:none}
+.gpu-photo-failed{padding:18px;font-size:13px;text-align:center}
 .gpu-source{width:100%;min-width:0}
 .gpu-source section{border-top:1px solid var(--line);padding-block:12px}
 .gpu-source section>strong,.gpu-source section>small{display:block;font-size:12px}
@@ -149,9 +169,10 @@
 .gpu-server-card p{overflow-wrap:anywhere}
 .gpu-sales{margin-block:24px}
 .gpu-sales h2{margin-top:0}
+.gpu-sales h2,.gpu-server-section h2{scroll-margin-block-start:160px}
 .gpu-solution-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start;margin-block:20px}
 .gpu-solution-row .gpu-selected-grid{grid-template-columns:minmax(0,1fr);margin:0}
 .gpu-solution-row .gpu-sales{margin:0}
 @media(max-width:1100px){.product-grid,.gpu-fields,.gpu-cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:700px){.product-grid,.gpu-fields,.gpu-cards,.gpu-server-grid,.gpu-workloads,.gpu-solution-row{grid-template-columns:minmax(0,1fr)}.gpu-discovery,.gpu-estimate,.gpu-sales{padding:18px}.gpu-tools>.button{max-width:100%;white-space:normal}.gpu-metrics{grid-template-columns:minmax(0,1fr)}.gpu-main .button{max-width:100%;white-space:normal}.gpu-card{padding:18px}}
+@media(max-width:700px){.product-grid,.gpu-fields,.gpu-cards,.gpu-server-grid,.gpu-workloads,.gpu-solution-row{grid-template-columns:minmax(0,1fr)}.gpu-model-field{grid-column:auto}.gpu-discovery,.gpu-estimate,.gpu-sales{padding:18px}.gpu-tools>.button{max-width:100%;white-space:normal}.gpu-metrics{grid-template-columns:minmax(0,1fr)}.gpu-main .button{max-width:100%;white-space:normal}.gpu-card{padding:18px}}
 @media print{.gpu-stepper,.gpu-tools,.gpu-sales .button,.gpu-server-section>.button{display:none}.gpu-cards{grid-template-columns:1fr 1fr}.gpu-card,.gpu-server-card{break-inside:avoid}}
