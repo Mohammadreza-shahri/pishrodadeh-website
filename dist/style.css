@@ -723,3 +723,50 @@ input:focus,select:focus{
   .category-nav{max-height:none!important;overflow:visible!important;border:0!important;background:transparent!important}
 }
 
+/* HPE-inspired engineering palette; status colors remain semantically distinct. */
+:root{
+  --blue:#01a982;
+  --blue-2:#e8f7f1;
+  --teal:#008f72;
+  --cyan:#59ddb0;
+  --navy:#081f2d;
+  --navy-2:#103849;
+  --navy-3:#155669;
+  --ring:0 0 0 4px rgba(1,169,130,.16);
+}
+body{
+  background-color:#f4f8f7;
+  background-image:linear-gradient(rgba(0,143,114,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(0,143,114,.028) 1px,transparent 1px);
+}
+.site-header{border-bottom:2px solid rgba(1,169,130,.72)}
+button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,a:focus-visible{outline-color:#01a982}
+.button.primary{background:linear-gradient(135deg,#01a982,#00866b);box-shadow:0 12px 26px rgba(0,143,114,.2)}
+.button.linklike,.eyebrow{color:#00866b}
+.chip.blue,.icon{background:#e5f6ef;color:#007d62}
+.step.current{border-color:#8ad8bc;background:#f2fbf7;color:#007d62}
+.step.current span{background:#008f72;border-color:#008f72}
+.workload-card.selected,.part-card.selected,.category-link.current{
+  border-color:#01a982;background:#f3fbf7;box-shadow:0 0 0 3px rgba(1,169,130,.1);
+}
+.server-card.selected{border-color:#01a982;box-shadow:0 0 0 3px rgba(1,169,130,.1)}
+.server-card.recommended{border-color:#8ad8bc;box-shadow:0 0 0 3px rgba(1,169,130,.08)}
+.hero-server-visual{
+  background:radial-gradient(circle at 50% 42%,rgba(89,221,176,.2),transparent 52%),linear-gradient(145deg,#0b2936,#155044);
+}
+.hero-server-body{fill:#6f9d8c}
+.hero-server-indicator{fill:#7ce8bd;filter:drop-shadow(0 0 6px #7ce8bd)}
+.hero-tech-line{stroke:#65dfb3}
+.hpe-wordmark{
+  display:inline-flex;align-items:center;justify-content:center;flex:none;
+  min-width:42px;min-height:32px;padding:4px 8px;border:1px solid #01a982;
+  border-radius:5px;background:#01a982;color:#fff;
+  margin-inline-end:8px;font:800 16px/1 Arial,sans-serif;letter-spacing:-.06em;direction:ltr;
+}
+@media (prefers-reduced-motion:reduce){
+  .button.primary{box-shadow:none}
+}
+@media print{
+  :root{--blue:#111;--teal:#111;--cyan:#111}
+  body{background:#fff}
+  .hpe-wordmark{background:#fff;color:#111;border-color:#111}
+}

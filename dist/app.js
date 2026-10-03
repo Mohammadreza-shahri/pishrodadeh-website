@@ -776,7 +776,7 @@ function serversPage(root) {
     if (current) top.append(tag(t('selectedServer'), 'good'));
     card.append(top);
     const title = el('div', null, 'server-title');
-    title.append(bidi(entry.short.replace(' Gen11', ''), 'server-code'), bidi('HPE ProLiant · Gen11', 'muted small'));
+    title.append(el('span', 'HPE', 'hpe-wordmark'), bidi(entry.short.replace(' Gen11', ''), 'server-code'), bidi('HPE ProLiant · Gen11', 'muted small'));
     card.append(title, chassisGraphic(entry));
 
     const facts = el('div', null, 'server-facts');

@@ -221,7 +221,7 @@ function modelsPage(main){
   const grid=el('div',null,'storage-model-grid');
   for(const candidate of candidates.slice(0,limit)){
     const m=candidate.model,card=el('article',null,'storage-model-card');card.dataset.modelId=m.id;
-    card.append(el('p','HPE / '+m.family,'eyebrow'),el('h3',m.name),
+    card.append(el('span','HPE','hpe-wordmark'),el('p',m.family,'eyebrow'),el('h3',m.name),
       el('span',t(m.lifecycle==='retired_in_snapshot'?'retired':'sourceActive'),'chip'),
       el('p',t('unknown')+' · '+t('capacity')+' / '+t('technical'),'muted'));
     findings(card,candidate.reasons);sourceDetails(card,m.evidence,m.qs_id);

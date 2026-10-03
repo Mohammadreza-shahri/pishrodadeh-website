@@ -29,6 +29,9 @@ function home(type=null, focus=false) {
       if(!available.length)continue;
       const card=el('article',null,'product-card');
       card.dataset.productType=kind;
+      for(const vendor of new Set(available.map(product=>product.vendor))) {
+        card.append(el('span',vendor,'hpe-wordmark'));
+      }
       card.append(el('span',String(index+1).padStart(2,'0')+' / '+kind.toUpperCase(),'product-index'),
         el('h2',t[kind]),el('p',t[kind+'Lead']),
         el('p',t.available+': '+[...new Set(available.map(p=>p.vendor))].join(' · '),'product-vendors'),
