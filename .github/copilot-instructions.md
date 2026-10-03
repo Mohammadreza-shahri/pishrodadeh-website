@@ -1,5 +1,7 @@
 # Copilot instructions
 
+- Deployment is authorized only to `https://staging.aria-man.com/` through `deploy-staging.yml`. Do not deploy to or modify the root domain, or run `deploy-production.yml`.
+
 - Keep the site as a static application served from `dist/`.
 - Preserve the deterministic rule engine in `dist/engine.js`; do not weaken unknown compatibility states into verified compatibility.
 - Keep Persian as the default language and preserve bilingual parity in `dist/i18n.js`.
