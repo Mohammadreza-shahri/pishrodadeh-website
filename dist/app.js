@@ -432,7 +432,13 @@ function heroServerGraphic() {
   line.setAttribute('d', 'M96 44h82l24-25h92l24 25h106');
   line.setAttribute('class', 'hero-tech-line');
   svg.append(line);
-  figure.append(svg, el('figcaption', t('heroGraphicCaption')));
+  const hardware = el('div', null, 'hero-hardware');
+  for (const cat of ['cpu', 'memory', 'storage', 'gpu']) {
+    const item = el('span', null, 'hero-hardware-item');
+    item.append(icon(cat), el('span', t(cat)));
+    hardware.append(item);
+  }
+  figure.append(svg, hardware, el('figcaption', t('heroGraphicCaption')));
   return figure;
 }
 
@@ -480,6 +486,9 @@ function layout() {
   const intro = el('section', null, 'hero');
   const introCopy = el('div', null, 'hero-copy');
   introCopy.append(el('p', 'ENGINEERING CONFIGURATION STUDIO', 'eyebrow'), el('h1', t('title')), el('p', t('heroLead'), 'hero-lead'));
+  const startLink = el('a', t('heroStart'), 'button primary hero-start');
+  startLink.href = '#main-content';
+  introCopy.append(startLink);
   const introStatus = el('div', null, 'hero-status');
   introStatus.append(
     metricCard(number(data.models.length), t('platformsLabel'), t('sourceBackedMetric')),
@@ -1225,6 +1234,7 @@ function summaryPanel(issues, {mobile}) {
   if (mobile) panel.id = 'mobile-summary';
   const head = el('div', null, 'summary-head');
   head.append(el('p', t('buildSummary'), 'small'), bidi(model().short, 'server-code'), el('small', `${state.chassis} · ${t(state.workload)}`));
+  head.append(chassisGraphic(model()));
   const status = el('div', null, 'summary-status');
   status.append(tag(issues.missing.length ? t('actionNeeded') : t('partialCheck'), issues.missing.length ? 'amber' : 'outline'));
   if (issues.direct.length + issues.conflicts.length) status.append(tag(t('conflict'), 'red'));
@@ -1253,7 +1263,9 @@ function summaryPanel(issues, {mobile}) {
     } else {
       value.append(el('span', cat === 'gpu' && !state.workload.startsWith('ai') && state.model_id !== '16913' ? t('notApplicable') : t('notSelected')));
     }
-    row.append(el('span', t(cat)), value);
+    const label = el('span', null, 'summary-category');
+    label.append(icon(cat), el('span', t(cat)));
+    row.append(label, value);
     items.append(row);
   }
   const target = el('div', null, 'progress-block');
