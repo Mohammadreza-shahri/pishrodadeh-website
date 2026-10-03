@@ -723,3 +723,79 @@ input:focus,select:focus{
   .category-nav{max-height:none!important;overflow:visible!important;border:0!important;background:transparent!important}
 }
 
+/* Enterprise hardware theme. Selection accents do not imply qualification. */
+:root{--bg:#f4f7f8;--surface-2:#edf4f3;--surface-3:#d9eae5;--ink:#162b3a;--muted:#526773;--line:#dce5e8;--line-strong:#b5c8cd;--teal:#01a982;--cyan:#72cdb8;--blue:#00765a;--blue-2:#e8f5f0;--shadow:0 12px 32px rgba(22,43,58,.07)}
+body{background-color:var(--bg);background-image:linear-gradient(rgba(22,43,58,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(22,43,58,.025) 1px,transparent 1px);background-size:48px 48px}
+.hero{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;margin:24px 0 20px;overflow:hidden;border:1px solid var(--line);border-radius:24px;background:#fff;box-shadow:var(--shadow)}
+.hero-copy{align-self:center;padding:36px;border:0;background:transparent;box-shadow:none;backdrop-filter:none}
+.hero h1{font-size:clamp(28px,3.4vw,44px);line-height:1.4}
+.hero-lead{max-width:48ch;margin-top:16px}
+.hero-start{margin-top:22px;text-decoration:none}
+.button.primary{background:#00765a;box-shadow:0 6px 16px rgba(0,118,90,.15)}
+.hero-server-visual{order:0;min-height:300px;padding:24px;border:0;border-radius:0;background:radial-gradient(ellipse at center,#deeee9,transparent 70%),#f7faf9;box-shadow:none}
+.hero-server-body{fill:#acb9bc;stroke:#536975;stroke-width:2}
+.hero-server-drive{fill:#253c48;stroke:#80989f;stroke-width:1.5}
+.hero-tech-line{stroke:#00765a;opacity:.35}.hero-glow{fill:rgba(22,43,58,.12)}
+.hero-server-indicator{fill:#01a982;filter:none}
+.hero-server-visual figcaption{color:var(--muted)}
+.hero-hardware{display:flex;justify-content:center;gap:18px;flex-wrap:wrap}
+.hero-hardware-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.hero-hardware .icon{width:30px;height:30px;background:transparent}.hero-hardware .icon svg{width:22px;height:22px}
+.hero-status{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0;border-top:1px solid var(--line);background:#f9fbfb}
+.hero-card{display:flex;flex-direction:row;align-items:center;justify-content:center;gap:12px;padding:12px;border:0;border-radius:0;background:none;box-shadow:none}
+.hero-card span{margin:0;font-size:12px;color:var(--muted);font-weight:500}.hero-card strong{font-size:19px;color:var(--ink)}
+.workload-card{grid-template-columns:54px minmax(0,1fr);padding:20px;gap:14px}
+.workload-card .icon,.icon{background:#edf5f2;color:#00765a}
+.workload-card::after,.server-card::after{display:none}
+.workload-card.selected,.part-card.selected{border-color:#00765a;background:#f5faf8;box-shadow:0 4px 16px rgba(0,118,90,.06)}
+.workload-card.selected .icon,.part-card.selected .part-content>.icon{background:#dfefe8;color:#00765a}
+.workload-card:hover,.profile-card:hover,.button:hover,.category-link:hover{border-color:#7dafa0}
+.step.current{background:#e8f5f0;border-color:#82bba9}
+.step.current span{background:#00765a;border-color:#00765a}
+.category-link.current{background:#e8f5f0;border-color:#82bba9}
+.category-link:hover{transform:none}
+.chassis{padding:16px;background:linear-gradient(150deg,#edf3f2,#dee8e8);color:var(--ink);border:1px solid var(--line)}
+.chassis svg{height:96px}.chassis-body{fill:#aebbbf;stroke:#627884}.chassis-bay{fill:#2b424e;stroke:#8ca2a9}.chassis-vent{fill:#324b57;stroke:#8ca2a9}
+.chassis figcaption{color:var(--muted);font-size:11px}.official-photo-link{color:#00765a;font-size:11px}
+.server-card .chassis{box-shadow:none}.server-card.recommended{border-color:#82bba9;box-shadow:var(--shadow)}
+.server-card.selected{border-color:#00765a}.fact{background:#f2f6f5}
+.part-title{font-weight:600}.part-sku{font-size:12px;color:var(--muted)}.part-specs .chip{background:#f2f6f5;border-color:var(--line)}
+.part-specs .chip.amber{background:var(--warn-bg);border-color:#e8c46c;color:var(--warn)}
+.button.language{white-space:nowrap;flex-shrink:0}.brand{flex:1}.brand-logo{flex-shrink:0}
+.part-card{transition:border-color .18s ease,box-shadow .18s ease}.part-card:hover{box-shadow:var(--shadow)}
+.summary{background:#fff;color:var(--ink);border-color:var(--line);box-shadow:var(--shadow)}
+.summary-head{padding:18px;border-bottom-color:var(--line)}.summary-head p{margin:0 0 8px}.summary-head small,.summary-metric small,.summary-code,.target-note{color:var(--muted)}
+.summary-head .chassis{margin-top:12px;padding:8px}.summary-head .chassis svg{height:64px}.summary-status{margin-top:12px}
+.summary-metrics{padding:16px;gap:8px}.summary-metric{padding:10px;background:#f2f6f5}
+.summary-metric strong{font-size:20px}.summary-items{padding:0 16px 16px}.summary-item{border-top-color:var(--line)}
+.summary-category{display:flex;align-items:center;gap:6px}.summary-category .icon{flex:none;width:24px;height:24px;border-radius:6px}.summary-category .icon svg{width:17px;height:17px}
+.summary-footer{padding:16px;background:#f2f6f5}.meter{background:#dce8e3}.empty>.icon{background:#edf5f2}
+@media (max-width:820px){.hero{grid-template-columns:1fr}.hero-copy{padding:26px}.hero-server-visual{min-height:220px}.hero-server-visual svg{max-height:200px}.hero-status{display:grid}.hero-card{gap:6px;padding:10px}.hero-card span{font-size:11px}}
+@media (max-width:560px){.hero{margin-top:16px}.hero-copy{padding:22px}.hero-server-visual{padding:14px;min-height:190px}.hero-hardware{gap:10px}.workload-card{grid-template-columns:40px minmax(0,1fr);padding:16px}.workload-card .icon{width:40px;height:40px}.hero-card{flex-direction:column;gap:4px}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.server-card:hover,.workload-card:hover,.step:hover{transform:none}}
+@media print{body{background:#fff}.hero-server-visual,.hero-start,.hero-status,.official-photo-link{display:none!important}.hero{display:block;box-shadow:none}.summary{color:#000;background:#fff;box-shadow:none}}
+
+@media (max-width:820px){
+  .site-header{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;padding:16px;align-items:start}
+  .brand{display:flex;width:100%;min-width:0;gap:12px;align-items:center}
+  .brand-logo{width:96px;height:44px;flex:0 0 96px;padding-inline-end:10px}
+  .brand-copy{flex:1;min-width:0;overflow-wrap:normal;word-break:normal}
+  .brand-copy strong{font-size:14px;line-height:1.7}
+  .header-actions{width:100%;min-width:0;justify-content:flex-start;gap:8px}
+  .header-actions .button{min-height:44px;max-width:100%;padding:10px 14px;overflow-wrap:normal;word-break:normal}
+  .header-actions .language{flex:0 0 auto}
+  .header-actions .chip{max-width:100%;white-space:normal}
+  .section-head,.advisor-head,.component-head,.bottom-action{flex-wrap:wrap}
+  .section-head>*,.advisor-head>*,.component-head>*{min-width:0;max-width:100%}
+  .button{min-height:44px}
+  .part-specs .chip,.build-tags .chip{white-space:normal;max-width:100%}
+  .summary-item>span:first-child{flex-basis:90px}
+}
+@media (max-width:560px){
+  .component-tools{grid-template-columns:minmax(0,1fr)}
+  .part-card{grid-template-columns:minmax(0,1fr)}
+  .part-actions{width:100%;min-width:0}
+  .bottom-action>.button{width:100%}
+  .hero-hardware-item{min-width:0}
+  .check-row{flex-wrap:wrap}
+}
