@@ -1,4 +1,4 @@
-# ARIA — HPE Configuration Studio
+# Ariaman — HPE Configuration Studio
 
 A Persian-first, bilingual static configurator for HPE server planning. The site keeps the existing deterministic rule engine and source-linked catalog, then wraps them in a clearer workload advisor, server comparison flow, component workflow, and technical review output.
 

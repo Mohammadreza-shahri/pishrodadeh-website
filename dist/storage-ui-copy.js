@@ -1,11 +1,11 @@
 export const strings = {
   fa: {
-    title:'پیکربندی ذخیره‌سازی HPE', lead:'نیازهای ذخیره‌سازی، پشتیبان‌گیری و آرشیو را مشخص کنید؛ سپس دستگاه، قطعات و گزارش فنی را بررسی کنید.',
+    title:'پیکربندی هوشمند ذخیره‌سازی HPE', lead:'نیازهای ذخیره‌سازی، پشتیبان‌گیری و آرشیو را مشخص کنید تا آریامن گزینه‌های متناسب را پیشنهاد دهد؛ سپس قطعات و موارد سازگاری را بررسی کنید.',
     needs:'نیازسنجی', models:'انتخاب دستگاه', parts:'قطعات', review:'بررسی فنی',
     purpose:'چه کاری می‌خواهید انجام دهید؟', primary:'ذخیره‌سازی اصلی', backup:'پشتیبان‌گیری', archive:'آرشیو روی نوار',
     primaryLead:'داده‌های عملیاتی، ماشین‌های مجازی و پایگاه داده.', backupLead:'نسخه‌های پشتیبان و بازیابی داده.', archiveLead:'نگهداری بلندمدت و نسخه آفلاین.',
     unspecified:'هنوز مشخص نیست', continue:'نمایش پیشنهادها', back:'بازگشت', select:'انتخاب دستگاه',
-    shortlist:'پیشنهاد اولیه مهندسی', shortlistNote:'رتبه‌بندی بر اساس کاربرد است. ظرفیت و کارایی باید برای پیکربندی انتخابی بررسی شوند.',
+    shortlist:'پیشنهادهای هوشمند ذخیره‌سازی', shortlistNote:'رتبه‌بندی بر اساس کاربرد است. ظرفیت و کارایی باید برای پیکربندی انتخابی بررسی شوند.',
     unknown:'نیازمند بررسی', sourceListed:'در سند منبع آمده است', retired:'سند بازنشسته در نسخه منبع',
     sourceActive:'سند فعال در نسخه منبع', sourceNote:'وضعیت چرخه عمر بر اساس نسخه محلی QuickSpecs است.',
     missingBase:'قطعه پایه قابل سفارش از این سند استخراج نشده است؛ فعلاً فقط برای مقایسه.',
@@ -33,12 +33,12 @@ export const strings = {
     technical:'تأیید فنی', noAssumption:'مقادیر خالی نامشخص باقی می‌مانند؛ پاسخ فرضی جایگزین نمی‌شود.',
   },
   en: {
-    title:'HPE Storage Configurator', lead:'Describe storage, backup and archive needs, then review the system, parts and technical report.',
+    title:'Smart HPE Storage Configurator', lead:'Describe your storage, backup and archive needs so Ariaman can suggest suitable systems, then review their components and compatibility findings.',
     needs:'Requirements', models:'Choose a system', parts:'Parts', review:'Technical review',
     purpose:'What do you need to do?', primary:'Primary storage', backup:'Backup', archive:'Tape archive',
     primaryLead:'Production data, virtual machines and databases.', backupLead:'Backup copies and data recovery.', archiveLead:'Long-term retention and offline copies.',
     unspecified:'Not yet known', continue:'Show recommendations', back:'Back', select:'Select system',
-    shortlist:'Engineering shortlist', shortlistNote:'Ranking reflects workload fit. Capacity and performance require review for the selected configuration.',
+    shortlist:'Smart storage recommendations', shortlistNote:'Ranking reflects workload fit. Capacity and performance require review for the selected configuration.',
     unknown:'Needs review', sourceListed:'Listed in the source', retired:'Retired document in source snapshot',
     sourceActive:'Active document in source snapshot', sourceNote:'Lifecycle status reflects the local QuickSpecs snapshot.',
     missingBase:'No orderable base was extracted from this source; available for comparison only.',

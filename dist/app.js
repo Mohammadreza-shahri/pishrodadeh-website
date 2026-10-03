@@ -1523,7 +1523,7 @@ function exportPayload() {
 }
 
 function exportJSON() {
-  download(`ARIA-${model().short.replaceAll(' ', '-')}.json`, JSON.stringify(exportPayload(), null, 2), 'application/json');
+  download(`ARIAMAN-${model().short.replaceAll(' ', '-')}.json`, JSON.stringify(exportPayload(), null, 2), 'application/json');
 }
 
 function shareWhatsApp(contact) {
@@ -1568,7 +1568,7 @@ function exportCSV() {
     [],
     [t('limitations'), t('coverageNotice'), '', '', t('reviewRequired')],
   ];
-  download('ARIA-HPE-BOM.csv', `\ufeff${rows.map(row => row.map(safe).join(',')).join('\r\n')}`, 'text/csv;charset=utf-8');
+  download('ARIAMAN-HPE-BOM.csv', `\ufeff${rows.map(row => row.map(safe).join(',')).join('\r\n')}`, 'text/csv;charset=utf-8');
 }
 
 function sanitizeDraft(savedState) {
