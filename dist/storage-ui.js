@@ -55,6 +55,10 @@ function render(){
     lang=value;host.onLanguage(value);render();
   }},t('title'),t('lead'));
   main.classList.add('storage-main');
+  main.closest('.shell').querySelector('.header-actions').append(button(t('reset'),()=>{
+    if(!window.confirm(t('resetConfirm')))return;
+    state=fresh();notice='';category='base';role='';family='';go(0);
+  }));
   const nav=el('nav',null,'storage-stepper');nav.setAttribute('aria-label',t('title'));
   steps.forEach((key,index)=>{
     const node=button(number(index+1)+' · '+t(key),()=>go(index),index===state.step?'primary':'ghost');
@@ -82,11 +86,7 @@ function render(){
       state={version:1,step:3,requirements,configuration};notice='';render();focusHeading();
     }catch{if(owner.isCurrent()){notice='importFailed';render();}}
   });
-  footer.append(button(t('import'),()=>importer.click()),importer,
-    button(t('reset'),()=>{
-      if(!window.confirm(t('resetConfirm')))return;
-      state=fresh();notice='';category='base';role='';family='';go(0);
-    }));
+  footer.append(button(t('import'),()=>importer.click()),importer);
   main.append(footer);
   if(id){
     const node=document.getElementById(id);

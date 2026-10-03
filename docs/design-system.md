@@ -21,6 +21,7 @@
 - **Advisor panels:** guided profiles plus editable sizing inputs.
 - **Server comparison cards:** use compact, non-product-specific chassis diagrams and show why a platform is relevant, tradeoffs, blockers, and source evidence before selection.
 - **Category navigation:** expose required/selected/problem states per component group.
+- Server category navigation and its Next action show controller before drives, without changing engine category definitions. Server and storage Start over actions live in the header and retain their confirmation dialogs.
 - **Part cards:** pair technical identifiers with plain-language summaries and source-backed state chips.
 - **Summary panel/drawer:** a light build sheet with the selected model's illustrative chassis and matching category icons; persistent on desktop and explicitly expandable on smaller screens. Existing calculations and issue states remain unchanged; SKUs are secondary.
 - **Issue panels:** separate missing selections, known conflicts, unresolved checks, and workload advisories, with correction links to affected groups.

@@ -72,6 +72,8 @@ try {
   ok('component page reached', Boolean(q('.category-nav')), text('.component-head h2'));
   const catButtons = all('.category-link');
   ok('all categories listed', catButtons.length >= 11, catButtons.length);
+  ok('controller appears before drives', catButtons.findIndex(b=>b.textContent.includes('کنترلر')) < catButtons.findIndex(b=>b.textContent.includes('ذخیره‌سازی')&&!b.textContent.includes('کنترلر')));
+  ok('server start over is in header', Boolean(all('.header-actions button').find(b=>b.textContent.includes('شروع دوباره'))));
   checkHeader('server components');
 
   const storageBtn = catButtons.find((b) => b.textContent.includes('ذخیره‌سازی'));

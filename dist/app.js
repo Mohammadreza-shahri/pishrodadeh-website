@@ -20,6 +20,7 @@ const STORAGE_KEY = 'aria-configurator-v3';
 const STORAGE_VERSION = 1;
 const PAGE_SIZE = 8;
 const BASE_REQUIRED = ['cpu', 'memory', 'storage', 'psu'];
+const COMPONENT_ORDER = ['cpu', 'memory', 'controller', 'storage', ...CATEGORIES.filter(cat => !['cpu', 'memory', 'controller', 'storage'].includes(cat))];
 const app = document.getElementById('app');
 
 let lang = 'fa';
@@ -532,8 +533,9 @@ function layout() {
     showMobileSummary = false;
     clearPersistedState();
     render();
-  }, 'linklike');
-  footerLinks.append(coverage, reset);
+  }, 'ghost');
+  actions.append(reset);
+  footerLinks.append(coverage);
   footer.append(footerLinks);
 
   shell.append(header, intro, stepper, coverageBand, main, footer);
@@ -968,7 +970,7 @@ function componentPage(root) {
   const workspace = el('div', null, 'workspace');
   const nav = el('nav', null, 'category-nav');
   nav.setAttribute('aria-label', t('category'));
-  for (const cat of CATEGORIES) {
+  for (const cat of COMPONENT_ORDER) {
     const statusKey = categoryStatus(cat, issues);
     const button = el('button', null, `category-link ${category === cat ? 'current' : ''}`.trim());
     button.type = 'button';
@@ -1134,12 +1136,12 @@ function renderParts(root, issues) {
 
   root.append(issuePanel(issues), requirementsPanel(issues));
   const action = el('div', null, 'bottom-action');
-  const index = CATEGORIES.indexOf(category);
+  const index = COMPONENT_ORDER.indexOf(category);
   action.append(
-    index < CATEGORIES.length - 1
-      ? arrowButton(`${t('next')} · ${t(CATEGORIES[index + 1])}`, () => {
+    index < COMPONENT_ORDER.length - 1
+      ? arrowButton(`${t('next')} · ${t(COMPONENT_ORDER[index + 1])}`, () => {
         withRender(() => {
-          category = CATEGORIES[index + 1];
+          category = COMPONENT_ORDER[index + 1];
         });
       })
       : arrowButton(t('continueReview'), () => go(4)),
